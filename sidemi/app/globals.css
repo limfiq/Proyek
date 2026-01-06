@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --primary: #2563eb;
+  --secondary: #facc15;
+  /* Rose 600 */
+  --primary-foreground: #ffffff;
+  --card: #f8fafc;
+  --card-foreground: #1e293b;
+  --border: #e2e8f0;
+  --radius: 0.5rem;
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --radius-radius: var(--radius);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', sans-serif;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  /* Hide everything */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only printable area */
+  #printable-area,
+  #printable-area * {
+    visibility: visible;
+  }
+
+  /* Force hide no-print items even inside printable area */
+  #printable-area .no-print,
+  #printable-area .no-print * {
+    visibility: hidden !important;
+    display: none !important;
+  }
+
+  #printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}

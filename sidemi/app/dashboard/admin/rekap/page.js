@@ -1,0 +1,275 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import api from '@/lib/api';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Printer, Edit, Ban, PlusCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+
+export default function AdminRekapPage() {
+    const [recap, setRecap] = useState([]);
+    const [kriteriaList, setKriteriaList] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [editOpen, setEditOpen] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState(null);
+
+    const [editForm, setEditForm] = useState({ LOGBOOK: '', MONEV: '', PEMBIMBING: '', PENGUJI: '', INSTANSI: '' });
+
+    const [periods, setPeriods] = useState([]);
+    const [selectedPeriod, setSelectedPeriod] = useState(null);
+
+    useEffect(() => {
+        loadInitialData();
+    }, []);
+
+    useEffect(() => {
+        if (selectedPeriod) {
+            loadRecap();
+        }
+    }, [selectedPeriod]);
+
+    const loadInitialData = async () => {
+        try {
+            const [resKriteria, resPeriode] = await Promise.all([
+                api.get('/api/kriteria'),
+                api.get('/api/periode')
+            ]);
+            setKriteriaList(resKriteria.data);
+            setPeriods(resPeriode.data);
+
+            const active = resPeriode.data.find(p => p.isActive);
+            if (active) {
+                setSelectedPeriod(active.id.toString());
+            } else if (resPeriode.data.length > 0) {
+                // If no active period, select the last one (latest)
+                setSelectedPeriod(resPeriode.data[resPeriode.data.length - 1].id.toString());
+            } else {
+                // If no periods at all - unlikely but handle gracefully
+                setLoading(false);
+            }
+        } catch (err) {
+            console.error(err);
+            setLoading(false);
+        }
+    };
+
+    const loadRecap = async () => {
+        if (!selectedPeriod) return;
+        setLoading(true);
+        try {
+            const res = await api.get(`/api/nilai/rekap?periodeId=${selectedPeriod}`);
+            setRecap(res.data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleEdit = (student) => {
+        setSelectedStudent(student);
+
+        // Init form with LOGBOOK and MONEV
+        const form = {
+            LOGBOOK: student.scores.LOGBOOK || '',
+            MONEV: student.scores.MONEV || ''
+        };
+
+        // Add detailed scores for criteria
+        // We need to know which criteria apply to this student (based on Tipe)
+        const relevantKriteria = kriteriaList.filter(k => k.tipe === student.tipe);
+
+        relevantKriteria.forEach(k => {
+            // If we have a stored value in 'detailed', use it.
+            // student.detailed has keys as string or number? keys in JS objects are strings.
+            // Try to access by ID.
+            if (student.detailed && student.detailed[k.id] !== undefined) {
+                form[k.id] = student.detailed[k.id];
+            } else {
+                form[k.id] = '';
+            }
+        });
+
+        setEditForm(form);
+        setEditOpen(true);
+    };
+
+    const handleSaveNilai = async () => {
+        try {
+            await api.post('/api/nilai/admin', {
+                pendaftaranId: selectedStudent.id,
+                scores: editForm
+            });
+            setEditOpen(false);
+            loadRecap(); // Reload to show updated scores
+            alert("Nilai berhasil disimpan");
+        } catch (err) {
+            console.error(err);
+            alert("Gagal menyimpan nilai");
+        }
+    };
+
+    const renderScore = (score, status) => {
+        if (!status) {
+            return <span className="text-red-500 font-semibold bg-red-50 px-2 py-1 rounded text-xs">Belum</span>;
+        }
+        return <span className="font-medium">{score}</span>;
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center no-print">
+                <h1 className="text-2xl font-bold">Rekapitulasi Nilai PKL</h1>
+                <div className="flex gap-2">
+                    <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Pilih Periode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {periods.map((p) => (
+                                <SelectItem key={p.id} value={p.id.toString()}>
+                                    {p.nama} {p.isActive ? '(Aktif)' : ''}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Button onClick={() => window.print()}>
+                        <Printer className="mr-2 h-4 w-4" /> Cetak Laporan
+                    </Button>
+                </div>
+            </div>
+
+            <Card id="printable-area">
+                <CardHeader>
+                    <CardTitle>Daftar Nilai Mahasiswa</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="rounded-md border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Mahasiswa</TableHead>
+                                    <TableHead>Tipe</TableHead>
+                                    <TableHead className="text-center">Logbook</TableHead>
+                                    <TableHead className="text-center">Monev</TableHead>
+                                    <TableHead className="text-center">Pembimbing</TableHead>
+                                    <TableHead className="text-center">Penguji</TableHead>
+                                    <TableHead className="text-center">Instansi</TableHead>
+                                    <TableHead className="text-right">Nilai Akhir</TableHead>
+                                    <TableHead className="text-right no-print">Aksi</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {recap.map((item) => (
+                                    <TableRow key={item.id}>
+                                        <TableCell>
+                                            <div className="font-medium">{item.mahasiswa}</div>
+                                            <div className="text-sm text-gray-500">{item.nim}</div>
+                                        </TableCell>
+                                        <TableCell>{item.tipe}</TableCell>
+                                        <TableCell className="text-center">
+                                            {renderScore(item.scores.LOGBOOK, item.status.LOGBOOK)}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            {renderScore(item.scores.MONEV, item.status.MONEV)}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            {renderScore(item.scores.PEMBIMBING, item.status.PEMBIMBING)}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            {renderScore(item.scores.PENGUJI, item.status.PENGUJI)}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            {renderScore(item.scores.INSTANSI, item.status.INSTANSI)}
+                                        </TableCell>
+                                        <TableCell className="text-right font-bold text-lg">
+                                            {item.finalScore}
+                                        </TableCell>
+                                        <TableCell className="text-right no-print">
+                                            {parseFloat(item.finalScore) > 0 ? (
+                                                <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} className="text-blue-600 hover:text-blue-800 hover:bg-blue-50">
+                                                    <Edit className="h-4 w-4 mr-1" /> Edit
+                                                </Button>
+                                            ) : (
+                                                <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} className="text-green-600 hover:text-green-800 hover:bg-green-50">
+                                                    <PlusCircle className="h-4 w-4 mr-1" /> Input
+                                                </Button>
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                {recap.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                                            Belum ada data pendaftaran.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Edit Nilai: {selectedStudent?.mahasiswa}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto px-1">
+                        <div className="grid grid-cols-4 items-center gap-4 border-b pb-4">
+                            <Label htmlFor="logbook" className="text-right font-bold">Logbook (25%)</Label>
+                            <Input id="logbook" value={editForm.LOGBOOK} onChange={(e) => setEditForm({ ...editForm, LOGBOOK: e.target.value })} className="col-span-3" type="number" placeholder="0-100" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4 border-b pb-4">
+                            <Label htmlFor="monev" className="text-right font-bold">Monev (20%)</Label>
+                            <Input id="monev" value={editForm.MONEV} onChange={(e) => setEditForm({ ...editForm, MONEV: e.target.value })} className="col-span-3" type="number" placeholder="0-100" />
+                        </div>
+
+                        {['PEMBIMBING', 'PENGUJI', 'INSTANSI'].map(role => {
+                            // Filter kriteria for this student type and role
+                            const items = kriteriaList.filter(k => k.tipe === selectedStudent?.tipe && k.role === role);
+                            if (items.length === 0) return null;
+
+                            return (
+                                <div key={role} className="space-y-3">
+                                    <h4 className="font-semibold text-sm text-gray-500 uppercase tracking-wide border-l-4 pl-2 border-primary/50">
+                                        {role === 'PEMBIMBING' ? 'Dosen Pembimbing' : role === 'PENGUJI' ? 'Dosen Penguji' : 'Instansi'}
+                                    </h4>
+                                    {items.map(k => (
+                                        <div key={k.id} className="grid grid-cols-4 items-center gap-4">
+                                            <Label htmlFor={`k-${k.id}`} className="text-right text-sm">{k.nama} <span className="text-[10px] text-gray-400">({k.bobot}%)</span></Label>
+                                            <Input
+                                                id={`k-${k.id}`}
+                                                value={editForm[k.id] || ''}
+                                                onChange={(e) => setEditForm({ ...editForm, [k.id]: e.target.value })}
+                                                className="col-span-3"
+                                                type="number"
+                                                placeholder="0-100"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="ghost" onClick={() => setEditOpen(false)}>Batal</Button>
+                        <Button type="button" onClick={handleSaveNilai}>Simpan</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div >
+    );
+}

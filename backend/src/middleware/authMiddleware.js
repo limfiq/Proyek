@@ -1,0 +1,37 @@
+const jwt = require('jsonwebtoken');
+
+const verifyToken = (req, res, next) => {
+    const token = req.headers['authorization'];
+
+    if (!token) {
+        return res.status(403).send({ message: 'No token provided!' });
+    }
+
+    // Bearer <token>
+    const splitToken = token.split(' ');
+    if (splitToken.length !== 2 || splitToken[0] !== 'Bearer') {
+        return res.status(401).send({ message: 'Unauthorized! Format: Bearer <token>' });
+    }
+
+    jwt.verify(splitToken[1], process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'Unauthorized!' });
+        }
+        req.userId = decoded.id;
+        req.userRole = decoded.role;
+        next();
+    });
+};
+
+const isAdmin = (req, res, next) => {
+    if (req.userRole === 'ADMIN') {
+        next();
+        return;
+    }
+    res.status(403).send({ message: 'Require Admin Role!' });
+};
+
+module.exports = {
+    verifyToken,
+    isAdmin
+};
