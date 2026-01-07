@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { GradingForm } from '@/components/dashboard/GradingForm';
+import { Pagination } from '@/components/ui/pagination';
 import api from '@/lib/api';
 
 import { CheckCircle, XCircle, FileText, BookOpen } from 'lucide-react';
@@ -12,6 +13,8 @@ export default function BimbinganPage() {
     const [students, setStudents] = useState([]);
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [role, setRole] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
 
     useEffect(() => {
         setRole(localStorage.getItem('role'));
@@ -119,12 +122,15 @@ export default function BimbinganPage() {
         }
     };
 
+    const totalPages = Math.ceil(students.length / itemsPerPage);
+    const currentData = students.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     return (
         <div className="space-y-6">
             <h1 className="text-2xl font-bold">Daftar Mahasiswa Bimbingan</h1>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {students.map(mhs => (
+                {currentData.map(mhs => (
                     <Card key={mhs.id} className="hover:shadow-md transition-shadow">
                         <CardHeader className="pb-2">
                             <CardTitle className="text-lg">{mhs.mahasiswa.nama}</CardTitle>
@@ -181,6 +187,12 @@ export default function BimbinganPage() {
                     </Card>
                 ))}
             </div>
+
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+            />
 
             {
                 selectedStudent && (

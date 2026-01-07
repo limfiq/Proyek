@@ -18,6 +18,8 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true
         },
         tanggal: DataTypes.DATE,
+        ruang: DataTypes.STRING,
+        sesi: DataTypes.STRING,
         nilaiAkhir: DataTypes.FLOAT
     }, {
         sequelize,

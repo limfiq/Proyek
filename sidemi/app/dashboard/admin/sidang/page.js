@@ -2,11 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
 import api from '@/lib/api';
-import { Plus, Calendar, User, UserCheck, Printer } from 'lucide-react';
+import { Plus, Calendar, User, UserCheck, Printer, Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from "@/lib/utils"
+import { Pagination } from '@/components/ui/pagination';
 
 export default function AdminSidangPage() {
     const [pendaftarans, setPendaftarans] = useState([]);
@@ -14,7 +28,9 @@ export default function AdminSidangPage() {
     const [sidangs, setSidangs] = useState([]);
     const [selectedStudentId, setSelectedStudentId] = useState(null); // ID or null
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [form, setForm] = useState({ dosenPengujiId: '', tanggal: '' });
+    const [form, setForm] = useState({ dosenPengujiId: '', tanggal: '', ruang: '', sesi: '' });
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     useEffect(() => {
         loadData();
@@ -42,7 +58,7 @@ export default function AdminSidangPage() {
 
     const handleAdd = () => {
         setSelectedStudentId(null); // No student pre-selected
-        setForm({ dosenPengujiId: '', tanggal: '' });
+        setForm({ dosenPengujiId: '', tanggal: '', ruang: '', sesi: '' });
         setIsDialogOpen(true);
     };
 
@@ -52,10 +68,12 @@ export default function AdminSidangPage() {
         if (existing) {
             setForm({
                 dosenPengujiId: String(existing.dosenPengujiId || ''),
-                tanggal: existing.tanggal ? existing.tanggal.split('T')[0] : ''
+                tanggal: existing.tanggal ? existing.tanggal.split('T')[0] : '',
+                ruang: existing.ruang || '',
+                sesi: existing.sesi || ''
             });
         } else {
-            setForm({ dosenPengujiId: '', tanggal: '' });
+            setForm({ dosenPengujiId: '', tanggal: '', ruang: '', sesi: '' });
         }
         setIsDialogOpen(true);
     };
@@ -85,7 +103,42 @@ export default function AdminSidangPage() {
     const getSidangInfo = (id) => sidangs.find(s => s.pendaftaranId === id);
 
     // Filter students who don't have sidang yet for the dropdown
-    const availableStudents = pendaftarans.filter(p => !sidangs.find(s => s.pendaftaranId === p.id));
+    const availableStudents = pendaftarans
+        .filter(p => !sidangs.find(s => s.pendaftaranId === p.id))
+        .map(s => ({
+            value: String(s.id),
+            label: `${s.mahasiswa?.nama} (${s.tipe})`
+        }));
+
+    const dosenOptions = dosens.map(d => ({
+        value: String(d.dosen?.id || 0),
+        label: d.dosen?.nama || d.username
+    }));
+
+    const ruangOptions = [
+        { value: "Lab. Basis Data", label: "Lab. Basis Data" },
+        { value: "Lab. RPL", label: "Lab. RPL" },
+        { value: "Lab. Multimedia", label: "Lab. Multimedia" },
+        { value: "Lab. Pemrograman", label: "Lab. Pemrograman" },
+        { value: "Lab. AI.Citra", label: "Lab. AI.Citra" },
+        { value: "Lab. Jaringan", label: "Lab. Jaringan" },
+        { value: "Ruang 3.2", label: "Ruang 3.2" },
+        { value: "Ruang 3.3", label: "Ruang 3.3" },
+        { value: "Ruang Aula", label: "Ruang Aula" },
+        { value: "Ruang Seminar", label: "Ruang Seminar" },
+    ];
+
+    const sesiOptions = [
+        { value: "Sesi 1", label: "08.00 - 08.45" },
+        { value: "Sesi 2", label: "08.45 - 09.30" },
+        { value: "Sesi 3", label: "09.30 - 10.15" },
+        { value: "Sesi 4", label: "10.15 - 11.00" },
+        { value: "Sesi 5", label: "11.00 - 11.45" },
+        { value: "Sesi 6", label: "11.45 - 12.30" },
+    ];
+
+    const totalPages = Math.ceil(pendaftarans.length / itemsPerPage);
+    const paginatedPendaftarans = pendaftarans.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
         <div className="space-y-6">
@@ -122,7 +175,7 @@ export default function AdminSidangPage() {
                         {pendaftarans.length === 0 && (
                             <tr><td colSpan="5" className="p-8 text-center text-gray-400">Belum ada mahasiswa eligible.</td></tr>
                         )}
-                        {pendaftarans.map(reg => {
+                        {paginatedPendaftarans.map(reg => {
                             const sidang = getSidangInfo(reg.id);
                             return (
                                 <tr key={reg.id} className="hover:bg-gray-50/50 transition-colors">
@@ -143,6 +196,10 @@ export default function AdminSidangPage() {
                                                     <Calendar className="h-3 w-3" />
                                                     {sidang.tanggal ? new Date(sidang.tanggal).toLocaleDateString('id-ID', { dateStyle: 'long' }) : '-'}
                                                 </div>
+                                                <div className="text-gray-500 text-xs mt-1">
+                                                    {sidang.ruang && <span className="mr-2">Ruang: {sidang.ruang}</span>}
+                                                    {sidang.sesi && <span>Sesi: {sidang.sesi}</span>}
+                                                </div>
                                             </div>
                                         ) : (
                                             <span className="inline-flex items-center px-2 py-1 rounded bg-gray-100 text-gray-500 text-xs font-medium">
@@ -162,8 +219,16 @@ export default function AdminSidangPage() {
                 </table>
             </div>
 
+            <div className="no-print">
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                />
+            </div>
+
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent>
+                <DialogContent className="overflow-visible">
                     <DialogHeader>
                         <DialogTitle>
                             {selectedStudentId ? 'Edit Jadwal Sidang' : 'Tambah Jadwal Sidang'}
@@ -171,43 +236,52 @@ export default function AdminSidangPage() {
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         {!selectedStudentId && (
-                            <div className="space-y-2">
+                            <div className="flex flex-col space-y-2">
                                 <label className="text-sm font-semibold text-gray-700">Mahasiswa</label>
-                                <Select onValueChange={val => setForm({ ...form, manualStudentId: val })}>
-                                    <SelectTrigger><SelectValue placeholder="Pilih Mahasiswa" /></SelectTrigger>
-                                    <SelectContent>
-                                        {availableStudents.map(s => (
-                                            <SelectItem key={s.id} value={String(s.id)}>
-                                                {s.mahasiswa?.nama} ({s.tipe})
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <Combobox
+                                    options={availableStudents}
+                                    value={form.manualStudentId}
+                                    onChange={val => setForm({ ...form, manualStudentId: val })}
+                                    placeholder="Pilih Mahasiswa"
+                                />
                             </div>
                         )}
-                        <div className="space-y-2">
+                        <div className="flex flex-col space-y-2">
                             <label className="text-sm font-semibold text-gray-700">Dosen Penguji</label>
-                            <Select
+                            <Combobox
+                                options={dosenOptions}
                                 value={form.dosenPengujiId}
-                                onValueChange={val => setForm({ ...form, dosenPengujiId: val })}
-                            >
-                                <SelectTrigger><SelectValue placeholder="Pilih Penguji" /></SelectTrigger>
-                                <SelectContent>
-                                    {dosens.map(d => (
-                                        <SelectItem key={d.dosen?.id || d.id} value={String(d.dosen?.id || 0)}>
-                                            {d.dosen?.nama || d.username}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                onChange={val => setForm({ ...form, dosenPengujiId: val })}
+                                placeholder="Pilih Penguji"
+                            />
                         </div>
-                        <div className="space-y-2">
+                        <div className="flex flex-col space-y-2">
                             <label className="text-sm font-semibold text-gray-700">Tanggal Sidang</label>
                             <Input
                                 type="date"
                                 value={form.tanggal}
                                 onChange={e => setForm({ ...form, tanggal: e.target.value })}
                             />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="flex flex-col space-y-2">
+                                <label className="text-sm font-semibold text-gray-700">Ruang</label>
+                                <Combobox
+                                    options={ruangOptions}
+                                    value={form.ruang}
+                                    onChange={val => setForm({ ...form, ruang: val })}
+                                    placeholder="Pilih Ruang"
+                                />
+                            </div>
+                            <div className="flex flex-col space-y-2">
+                                <label className="text-sm font-semibold text-gray-700">Sesi</label>
+                                <Combobox
+                                    options={sesiOptions}
+                                    value={form.sesi}
+                                    onChange={val => setForm({ ...form, sesi: val })}
+                                    placeholder="Pilih Sesi"
+                                />
+                            </div>
                         </div>
                     </div>
                     <DialogFooter>
@@ -218,4 +292,54 @@ export default function AdminSidangPage() {
             </Dialog>
         </div>
     );
+}
+
+function Combobox({ options, value, onChange, placeholder }) {
+    const [open, setOpen] = useState(false)
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-full justify-between"
+                >
+                    {value
+                        ? options.find((option) => option.value === value)?.label
+                        : placeholder}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                <Command>
+                    <CommandInput placeholder={`Cari ${placeholder?.toLowerCase()}...`} />
+                    <CommandList>
+                        <CommandEmpty>No results found.</CommandEmpty>
+                        <CommandGroup>
+                            {options.map((option) => (
+                                <CommandItem
+                                    key={option.value}
+                                    value={option.label}
+                                    onSelect={(currentValue) => {
+                                        onChange(option.value === value ? "" : option.value)
+                                        setOpen(false)
+                                    }}
+                                >
+                                    <Check
+                                        className={cn(
+                                            "mr-2 h-4 w-4",
+                                            value === option.value ? "opacity-100" : "opacity-0"
+                                        )}
+                                    />
+                                    {option.label}
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    )
 }

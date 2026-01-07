@@ -7,12 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Trash2 } from 'lucide-react';
 import api from '@/lib/api';
+import { Pagination } from '@/components/ui/pagination';
 
 export default function MasterUsersPage() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [form, setForm] = useState({ username: '', password: '', role: 'MAHASISWA' });
     const [profile, setProfile] = useState({ nama: '', nim: '', nidn: '', kelas: '', angkatan: '' });
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     useEffect(() => {
         loadUsers();
@@ -66,6 +69,9 @@ export default function MasterUsersPage() {
             alert('Failed to delete');
         }
     };
+
+    const totalPages = Math.ceil(users.length / itemsPerPage);
+    const paginatedUsers = users.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
         <div className="space-y-6">
@@ -144,7 +150,7 @@ export default function MasterUsersPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {users.map(u => (
+                        {paginatedUsers.map(u => (
                             <tr key={u.id} className="border-b last:border-0 hover:bg-gray-50">
                                 <td className="p-4">{u.username}</td>
                                 <td className="p-4"><span className="bg-gray-100 px-2 py-1 rounded text-xs font-bold">{u.role}</span></td>
@@ -167,6 +173,12 @@ export default function MasterUsersPage() {
                     </tbody>
                 </table>
             </div>
+
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+            />
         </div>
     );
 }

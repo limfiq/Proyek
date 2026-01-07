@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input';
 import api from '@/lib/api';
 import { BadgeCheck, Clock, XCircle, UserCheck, Plus, Building2 } from 'lucide-react';
+import { Pagination } from '@/components/ui/pagination';
 
 export default function AdminValidasiPage() {
     const [registrations, setRegistrations] = useState([]);
@@ -29,6 +30,9 @@ export default function AdminValidasiPage() {
         tipe: 'PKL1',
         judulProject: ''
     });
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     useEffect(() => {
         loadData();
@@ -110,6 +114,9 @@ export default function AdminValidasiPage() {
         }
     };
 
+    const totalPages = Math.ceil(registrations.length / itemsPerPage);
+    const paginatedRegistrations = registrations.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -143,7 +150,7 @@ export default function AdminValidasiPage() {
                                 </td>
                             </tr>
                         )}
-                        {registrations.map(reg => (
+                        {paginatedRegistrations.map(reg => (
                             <tr key={reg.id} className="hover:bg-gray-50/50 transition-colors">
                                 <td className="p-4">
                                     <div className="font-bold text-gray-900">{reg.mahasiswa?.nama}</div>
@@ -202,6 +209,12 @@ export default function AdminValidasiPage() {
                     </tbody>
                 </table>
             </div>
+
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+            />
 
             {/* PROCESS DIALOG */}
             {selectedReg && (

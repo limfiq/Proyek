@@ -22,7 +22,7 @@ module.exports = {
                 createdAt: timestamp,
                 updatedAt: timestamp
             }
-        ], {});
+        ], { ignoreDuplicates: true });
 
         // 2. Seed Users
         const users = [
@@ -70,7 +70,7 @@ module.exports = {
             }
         ];
 
-        await queryInterface.bulkInsert('Users', users, {});
+        await queryInterface.bulkInsert('Users', users, { ignoreDuplicates: true });
 
         // Get User IDs
         const userRecords = await queryInterface.sequelize.query(
@@ -96,7 +96,7 @@ module.exports = {
                 createdAt: timestamp,
                 updatedAt: timestamp
             }
-        ], {});
+        ], { ignoreDuplicates: true });
 
         // 4. Seed Mahasiswa
         await queryInterface.bulkInsert('Mahasiswas', [
@@ -118,7 +118,18 @@ module.exports = {
                 createdAt: timestamp,
                 updatedAt: timestamp
             }
-        ], {});
+        ], { ignoreDuplicates: true });
+
+        // 5. Seed Instansi
+        await queryInterface.bulkInsert('Instansis', [
+            {
+                userId: getUserId('instansi1'),
+                nama: 'PT Teknologi Maju',
+                alamat: 'Jl. Sudirman No. 10',
+                createdAt: timestamp,
+                updatedAt: timestamp
+            }
+        ], { ignoreDuplicates: true });
 
         // 6. Seed Pendaftaran (Transaction Data)
         // Fetch IDs robustly using direct queries
@@ -166,7 +177,7 @@ module.exports = {
                 createdAt: timestamp,
                 updatedAt: timestamp
             }
-        ], {});
+        ], { ignoreDuplicates: true });
 
         // 7. Seed Laporan Harian (For Active Student)
         // Fetch Pendaftaran ID
@@ -192,7 +203,7 @@ module.exports = {
                 createdAt: timestamp,
                 updatedAt: timestamp
             }
-        ], {});
+        ], { ignoreDuplicates: true });
 
         // 8. Seed Laporan Tengah
         await queryInterface.bulkInsert('LaporanTengahs', [
@@ -203,7 +214,7 @@ module.exports = {
                 createdAt: timestamp,
                 updatedAt: timestamp
             }
-        ], {});
+        ], { ignoreDuplicates: true });
 
         // 9. Seed Sidang (Schedule Defense)
         // Need Dosen 2 as Penguji
@@ -218,7 +229,7 @@ module.exports = {
                 createdAt: timestamp,
                 updatedAt: timestamp
             }
-        ], {});
+        ], { ignoreDuplicates: true });
 
         // 10. Seed Komponen Nilai (Sample Grades)
         await queryInterface.bulkInsert('KomponenNilais', [
@@ -236,7 +247,7 @@ module.exports = {
                 createdAt: timestamp,
                 updatedAt: timestamp
             }
-        ], {});
+        ], { ignoreDuplicates: true });
     },
 
     async down(queryInterface, Sequelize) {

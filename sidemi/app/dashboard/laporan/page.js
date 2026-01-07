@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Upload } from 'lucide-react';
+import { Pagination } from '@/components/ui/pagination';
 import api from '@/lib/api';
 import { motion } from 'framer-motion';
 
@@ -19,6 +20,10 @@ export default function LaporanPage() {
     const [formMingguan, setFormMingguan] = useState({ mingguKe: '', fileUrl: '' });
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
+
+    const [harianPage, setHarianPage] = useState(1);
+    const [mingguanPage, setMingguanPage] = useState(1);
+    const itemsPerPage = 5;
 
     useEffect(() => {
         loadPendaftaran();
@@ -139,6 +144,12 @@ export default function LaporanPage() {
         )
     }
 
+    const harianTotalPages = Math.ceil(harianList.length / itemsPerPage);
+    const harianPaginated = harianList.slice((harianPage - 1) * itemsPerPage, harianPage * itemsPerPage);
+
+    const mingguanTotalPages = Math.ceil(mingguanList.length / itemsPerPage);
+    const mingguanPaginated = mingguanList.slice((mingguanPage - 1) * itemsPerPage, mingguanPage * itemsPerPage);
+
     return (
         <div className="space-y-6">
             <div className="flex gap-4 border-b">
@@ -211,7 +222,7 @@ export default function LaporanPage() {
 
                         <div className="space-y-4">
                             <h3 className="font-semibold text-lg">Riwayat Laporan</h3>
-                            {harianList.map((item) => (
+                            {harianPaginated.map((item) => (
                                 <Card key={item.id} className="bg-white">
                                     <CardContent className="p-4">
                                         <div className="flex justify-between items-start">
@@ -227,6 +238,11 @@ export default function LaporanPage() {
                                     </CardContent>
                                 </Card>
                             ))}
+                            <Pagination
+                                currentPage={harianPage}
+                                totalPages={harianTotalPages}
+                                onPageChange={setHarianPage}
+                            />
                         </div>
                     </div>
                 ) : activeTab === 'mingguan' ? (
@@ -283,7 +299,7 @@ export default function LaporanPage() {
                                                     <td colSpan="3" className="p-4 text-center text-gray-500">Belum ada laporan.</td>
                                                 </tr>
                                             )}
-                                            {mingguanList.map((item) => (
+                                            {mingguanPaginated.map((item) => (
                                                 <tr key={item.id} className="border-t">
                                                     <td className="p-3 font-bold text-center">{item.mingguKe}</td>
                                                     <td className="p-3">
@@ -307,6 +323,11 @@ export default function LaporanPage() {
                                     </table>
                                 </CardContent>
                             </Card>
+                            <Pagination
+                                currentPage={mingguanPage}
+                                totalPages={mingguanTotalPages}
+                                onPageChange={setMingguanPage}
+                            />
                         </div>
                     </div>
                 ) : activeTab === 'tengah' ? (

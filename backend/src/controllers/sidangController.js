@@ -27,21 +27,23 @@ exports.getAllSidang = async (req, res) => {
 
 exports.createSchedule = async (req, res) => {
     try {
-        const { pendaftaranId, dosenPengujiId, tanggal } = req.body;
+        const { pendaftaranId, dosenPengujiId, tanggal, ruang, sesi } = req.body;
 
         // Check availability, etc. omitted for brevity
 
         // Check if exists
         const existing = await Sidang.findOne({ where: { pendaftaranId } });
         if (existing) {
-            await existing.update({ dosenPengujiId, tanggal });
+            await existing.update({ dosenPengujiId, tanggal, ruang, sesi });
             return res.send({ message: 'Jadwal sidang updated' });
         }
 
         await Sidang.create({
             pendaftaranId,
             dosenPengujiId,
-            tanggal
+            tanggal,
+            ruang,
+            sesi
         });
 
         res.status(201).send({ message: 'Jadwal sidang created' });
