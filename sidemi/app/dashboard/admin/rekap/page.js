@@ -5,7 +5,7 @@ import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Printer, Edit, Ban, PlusCircle } from 'lucide-react';
+import { Printer, Edit, Ban, PlusCircle, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Pagination } from '@/components/ui/pagination';
 
 export default function AdminRekapPage() {
     const [recap, setRecap] = useState([]);
@@ -28,6 +30,13 @@ export default function AdminRekapPage() {
 
     const [periods, setPeriods] = useState([]);
     const [selectedPeriod, setSelectedPeriod] = useState(null);
+
+    const [activeTab, setActiveTab] = useState('PKL1');
+    const [currentPage, setCurrentPage] = useState(1);
+
+    // [NEW] Search and PageSize
+    const [searchQuery, setSearchQuery] = useState('');
+    const [pageSize, setPageSize] = useState(10);
 
     useEffect(() => {
         loadInitialData();
@@ -120,6 +129,24 @@ export default function AdminRekapPage() {
         }
     };
 
+    const filteredRecap = recap.filter(r => {
+        // 1. Filter by Tab (Tipe)
+        if (r.tipe !== activeTab) return false;
+
+        // 2. Filter by Search
+        const query = searchQuery.toLowerCase();
+        const mhs = r.mahasiswa?.toLowerCase() || '';
+        const nim = r.nim?.toLowerCase() || '';
+        if (query && !mhs.includes(query) && !nim.includes(query)) return false;
+
+        return true;
+    });
+
+    const totalPages = Math.ceil(filteredRecap.length / (pageSize === 'ALL' ? filteredRecap.length : pageSize));
+    const paginatedRecap = pageSize === 'ALL'
+        ? filteredRecap
+        : filteredRecap.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
     const renderScore = (score, status) => {
         if (!status) {
             return <span className="text-red-500 font-semibold bg-red-50 px-2 py-1 rounded text-xs">Belum</span>;
@@ -150,77 +177,60 @@ export default function AdminRekapPage() {
                 </div>
             </div>
 
-            <Card id="printable-area">
-                <CardHeader>
-                    <CardTitle>Daftar Nilai Mahasiswa</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="rounded-md border">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Mahasiswa</TableHead>
-                                    <TableHead>Tipe</TableHead>
-                                    <TableHead className="text-center">Logbook</TableHead>
-                                    <TableHead className="text-center">Monev</TableHead>
-                                    <TableHead className="text-center">Pembimbing</TableHead>
-                                    <TableHead className="text-center">Penguji</TableHead>
-                                    <TableHead className="text-center">Instansi</TableHead>
-                                    <TableHead className="text-right">Nilai Akhir</TableHead>
-                                    <TableHead className="text-right no-print">Aksi</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {recap.map((item) => (
-                                    <TableRow key={item.id}>
-                                        <TableCell>
-                                            <div className="font-medium">{item.mahasiswa}</div>
-                                            <div className="text-sm text-gray-500">{item.nim}</div>
-                                        </TableCell>
-                                        <TableCell>{item.tipe}</TableCell>
-                                        <TableCell className="text-center">
-                                            {renderScore(item.scores.LOGBOOK, item.status.LOGBOOK)}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            {renderScore(item.scores.MONEV, item.status.MONEV)}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            {renderScore(item.scores.PEMBIMBING, item.status.PEMBIMBING)}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            {renderScore(item.scores.PENGUJI, item.status.PENGUJI)}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            {renderScore(item.scores.INSTANSI, item.status.INSTANSI)}
-                                        </TableCell>
-                                        <TableCell className="text-right font-bold text-lg">
-                                            {item.finalScore}
-                                        </TableCell>
-                                        <TableCell className="text-right no-print">
-                                            {parseFloat(item.finalScore) > 0 ? (
-                                                <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} className="text-blue-600 hover:text-blue-800 hover:bg-blue-50">
-                                                    <Edit className="h-4 w-4 mr-1" /> Edit
-                                                </Button>
-                                            ) : (
-                                                <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} className="text-green-600 hover:text-green-800 hover:bg-green-50">
-                                                    <PlusCircle className="h-4 w-4 mr-1" /> Input
-                                                </Button>
-                                            )}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                                {recap.length === 0 && (
-                                    <TableRow>
-                                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                                            Belum ada data pendaftaran.
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-                </CardContent>
-            </Card>
+
+            {/* Search and Limit Controls */}
+            <div className="flex justify-between items-center bg-white p-4 rounded-lg border shadow-sm no-print">
+                <div className="relative w-full max-w-sm">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                    <Input
+                        placeholder="Cari Mahasiswa atau NIM..."
+                        className="pl-9"
+                        value={searchQuery}
+                        onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                    />
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">Show:</span>
+                    <Select value={String(pageSize)} onValueChange={val => {
+                        setPageSize(val === 'ALL' ? 'ALL' : Number(val));
+                        setCurrentPage(1);
+                    }}>
+                        <SelectTrigger className="w-[100px]">
+                            <SelectValue placeholder="Limit" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="10">10 / Page</SelectItem>
+                            <SelectItem value="20">20 / Page</SelectItem>
+                            <SelectItem value="50">50 / Page</SelectItem>
+                            <SelectItem value="ALL">Show All</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+
+            <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setCurrentPage(1); }} className="w-full">
+                <TabsList className="grid w-full grid-cols-3 mb-4">
+                    <TabsTrigger value="PKL1">PKL 1 (Etika Profesi)</TabsTrigger>
+                    <TabsTrigger value="PKL2">PKL 2 (Proyek Sistem)</TabsTrigger>
+                    <TabsTrigger value="MBKM">MBKM (S1)</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="PKL1">
+                    <RecapTable data={paginatedRecap} handleEdit={handleEdit} renderScore={renderScore} />
+                </TabsContent>
+                <TabsContent value="PKL2">
+                    <RecapTable data={paginatedRecap} handleEdit={handleEdit} renderScore={renderScore} />
+                </TabsContent>
+                <TabsContent value="MBKM">
+                    <RecapTable data={paginatedRecap} handleEdit={handleEdit} renderScore={renderScore} />
+                </TabsContent>
+            </Tabs>
+
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+            />
 
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
                 <DialogContent>
@@ -271,5 +281,81 @@ export default function AdminRekapPage() {
                 </DialogContent>
             </Dialog>
         </div >
+    );
+}
+
+function RecapTable({ data, handleEdit, renderScore }) {
+    return (
+        <Card id="printable-area">
+            <CardHeader>
+                <CardTitle>Daftar Nilai Mahasiswa</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="rounded-md border">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Mahasiswa</TableHead>
+                                <TableHead>Tipe</TableHead>
+                                <TableHead className="text-center">Logbook</TableHead>
+                                <TableHead className="text-center">Monev</TableHead>
+                                <TableHead className="text-center">Pembimbing</TableHead>
+                                <TableHead className="text-center">Penguji</TableHead>
+                                <TableHead className="text-center">Instansi</TableHead>
+                                <TableHead className="text-right">Nilai Akhir</TableHead>
+                                <TableHead className="text-right no-print">Aksi</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {data.map((item) => (
+                                <TableRow key={item.id}>
+                                    <TableCell>
+                                        <div className="font-medium">{item.mahasiswa}</div>
+                                        <div className="text-sm text-gray-500">{item.nim}</div>
+                                    </TableCell>
+                                    <TableCell>{item.tipe}</TableCell>
+                                    <TableCell className="text-center">
+                                        {renderScore(item.scores.LOGBOOK, item.status.LOGBOOK)}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        {renderScore(item.scores.MONEV, item.status.MONEV)}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        {renderScore(item.scores.PEMBIMBING, item.status.PEMBIMBING)}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        {renderScore(item.scores.PENGUJI, item.status.PENGUJI)}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        {renderScore(item.scores.INSTANSI, item.status.INSTANSI)}
+                                    </TableCell>
+                                    <TableCell className="text-right font-bold text-lg">
+                                        {item.finalScore}
+                                    </TableCell>
+                                    <TableCell className="text-right no-print">
+                                        {parseFloat(item.finalScore) > 0 ? (
+                                            <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} className="text-blue-600 hover:text-blue-800 hover:bg-blue-50">
+                                                <Edit className="h-4 w-4 mr-1" /> Edit
+                                            </Button>
+                                        ) : (
+                                            <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} className="text-green-600 hover:text-green-800 hover:bg-green-50">
+                                                <PlusCircle className="h-4 w-4 mr-1" /> Input
+                                            </Button>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                            {data.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                                        Belum ada data nilai.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+            </CardContent>
+        </Card>
     );
 }

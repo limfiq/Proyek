@@ -70,11 +70,12 @@ export default function MasterKriteriaPage() {
 
             <div className="bg-white/50 p-1 rounded-lg">
                 <Tabs defaultValue="PKL1" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 mb-6 h-12">
+                    <TabsList className="grid w-full grid-cols-3 mb-6 h-12">
                         <TabsTrigger value="PKL1" className="text-base">PKL 1 (Etika Profesi)</TabsTrigger>
                         <TabsTrigger value="PKL2" className="text-base">PKL 2 (Proyek Sistem)</TabsTrigger>
+                        <TabsTrigger value="MBKM" className="text-base">MBKM (S1)</TabsTrigger>
                     </TabsList>
-                    {['PKL1', 'PKL2'].map(tipe => (
+                    {['PKL1', 'PKL2', 'MBKM'].map(tipe => (
                         <TabsContent key={tipe} value={tipe} className="space-y-6 animate-in fade-in-50 duration-300">
                             {['PEMBIMBING', 'PENGUJI', 'INSTANSI'].map(role => {
                                 const items = data.filter(d => d.tipe === tipe && d.role === role);
@@ -90,8 +91,8 @@ export default function MasterKriteriaPage() {
                                                 </h3>
                                             </div>
                                             <span className={`text-xs px-3 py-1 rounded-full font-medium ${items.reduce((s, i) => s + parseFloat(i.bobot), 0) === 100
-                                                    ? 'bg-green-100 text-green-700'
-                                                    : 'bg-gray-100 text-gray-600'
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-gray-100 text-gray-600'
                                                 }`}>
                                                 Total Bobot: {items.reduce((s, i) => s + parseFloat(i.bobot), 0)}%
                                             </span>
@@ -182,6 +183,7 @@ export default function MasterKriteriaPage() {
                                 <SelectContent>
                                     <SelectItem value="PKL1">PKL 1 (Etika Profesi)</SelectItem>
                                     <SelectItem value="PKL2">PKL 2 (Proyek Sistem)</SelectItem>
+                                    <SelectItem value="MBKM">MBKM (S1)</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

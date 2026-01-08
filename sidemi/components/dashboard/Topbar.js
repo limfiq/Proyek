@@ -12,12 +12,9 @@ export function Topbar() {
                     <Menu className="h-5 w-5" />
                 </Button>
                 <div className="hidden md:flex items-center gap-2 text-gray-400 bg-gray-50 px-3 py-2 rounded-lg w-full max-w-md focus-within:ring-1 ring-primary/20 transition-all">
-                    <Search className="h-4 w-4" />
-                    <input
-                        type="text"
-                        placeholder="Search..."
-                        className="bg-transparent border-none outline-none text-sm w-full text-foreground placeholder:text-gray-400"
-                    />
+                    <span className="text-sm italic text-gray-500 truncate">
+                        "Kesuksesan dimulai dari langkah kecil yang kamu ambil hari ini."
+                    </span>
                 </div>
             </div>
 

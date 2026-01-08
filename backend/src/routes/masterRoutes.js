@@ -12,6 +12,13 @@ router.post('/periode', [verifyToken, isAdmin], periodeController.create);
 router.put('/periode/:id', [verifyToken, isAdmin], periodeController.update);
 router.delete('/periode/:id', [verifyToken, isAdmin], periodeController.delete);
 
+// Prodi Routes
+const prodiController = require('../controllers/prodiController');
+router.get('/prodi', verifyToken, prodiController.getAll);
+router.post('/prodi', [verifyToken, isAdmin], prodiController.create);
+router.put('/prodi/:id', [verifyToken, isAdmin], prodiController.update);
+router.delete('/prodi/:id', [verifyToken, isAdmin], prodiController.delete);
+
 // Instansi Routes
 router.get('/instansi', verifyToken, instansiController.findAll);
 router.post('/instansi', verifyToken, instansiController.create); // Student can propose
@@ -21,6 +28,7 @@ router.delete('/instansi/:id', [verifyToken, isAdmin], instansiController.delete
 // User Routes
 router.get('/users', [verifyToken, isAdmin], userController.findAll);
 router.post('/users', [verifyToken, isAdmin], userController.create);
+router.put('/users/:id', [verifyToken, isAdmin], userController.update);
 router.delete('/users/:id', [verifyToken, isAdmin], userController.delete);
 
 // Kriteria Routes

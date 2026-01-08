@@ -6,6 +6,7 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             Mahasiswa.belongsTo(models.User, { foreignKey: 'userId', as: 'user' });
             Mahasiswa.hasMany(models.Pendaftaran, { foreignKey: 'mahasiswaId', as: 'pendaftaran' });
+            Mahasiswa.belongsTo(models.Prodi, { foreignKey: 'prodiId', as: 'prodi' });
         }
     }
     Mahasiswa.init({
@@ -27,7 +28,8 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false
         },
         kelas: DataTypes.STRING,
-        angkatan: DataTypes.STRING
+        angkatan: DataTypes.STRING,
+        prodiId: DataTypes.INTEGER
     }, {
         sequelize,
         modelName: 'Mahasiswa',

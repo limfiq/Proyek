@@ -1,6 +1,8 @@
+import * as React from 'react';
+import { Slot } from '@radix-ui/react-slot';
 import { cn } from '@/lib/utils';
 
-export function Button({ className, variant = 'default', size = 'default', ...props }) {
+const Button = React.forwardRef(({ className, variant = 'default', size = 'default', asChild = false, ...props }, ref) => {
     const variants = {
         default: 'bg-primary text-white hover:bg-blue-700 shadow-lg hover:shadow-primary/30',
         outline: 'border border-gray-300 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800',
@@ -15,15 +17,21 @@ export function Button({ className, variant = 'default', size = 'default', ...pr
         icon: 'h-10 w-10',
     };
 
+    const Comp = asChild ? Slot : 'button';
+
     return (
-        <button
+        <Comp
             className={cn(
                 'inline-flex items-center justify-center rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50 active:scale-95',
                 variants[variant],
                 sizes[size],
                 className
             )}
+            ref={ref}
             {...props}
         />
     );
-}
+});
+Button.displayName = 'Button';
+
+export { Button };

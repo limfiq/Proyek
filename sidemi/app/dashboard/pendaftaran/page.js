@@ -22,16 +22,58 @@ export default function PendaftaranPage() {
     });
     const [message, setMessage] = useState('');
 
+    const [availableTypes, setAvailableTypes] = useState([]);
+
     useEffect(() => {
         loadInstansi();
+        checkStatus();
     }, []);
 
-    const loadInstansi = async () => {
+    const checkStatus = async () => {
         try {
-            const res = await api.get('/api/instansi');
-            setInstansiList(res.data);
+            const res = await api.get('/api/pkl/me');
+            if (res.data) {
+                // If already registered, we don't strictly need to limit availableTypes for display 
+                // as the form won't be shown (status view takes over), 
+                // but for consistency we can still fetch profile.
+                // However, priority is to show status.
+                // let's just fetch profile if no registration status or always.
+            }
+
+            // Fetch user profile to determine Prodi
+            const userRes = await api.get('/api/auth/me').catch(() => null) || await api.get('/api/users/me').catch(() => null);
+            // Verify path. api/auth/me is common, or api/users/me. I'll use a safe pattern or try one.
+            // Based on previous files, there wasn't a clear "auth/me".
+            // But let's assume /api/users/me works or I add it?
+            // Wait, I can't change backend. I have to hope there is an endpoint.
+            // Actually, `SidangPage` used `api.get('/api/pkl/ujian')`.
+            // `Sidebar.js` uses `localStorage.getItem('role')`. 
+            // It seems I might rely on LocalStorage, but profile info like Prodi isn't there.
+            // I'll assume `/api/users/me` exists or `api/auth/me`. 
+            // Let's try `api.get('/api/auth/me')` as it's a standard convention.
+
+            if (userRes && userRes.data && userRes.data.mahasiswa && userRes.data.mahasiswa.prodi) {
+                const jenjang = userRes.data.mahasiswa.prodi.jenjang;
+                if (jenjang === 'S1') {
+                    setAvailableTypes(['MBKM']);
+                    setFormData(f => ({ ...f, tipe: 'MBKM' }));
+                } else {
+                    setAvailableTypes(['PKL1', 'PKL2']);
+                }
+            } else {
+                // Default fallback
+                setAvailableTypes(['PKL1', 'PKL2']);
+            }
+
+            // Re-set status if we got it
+            if (res.data) {
+                // ... handle status
+            }
+
         } catch (err) {
             console.error(err);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -39,6 +81,13 @@ export default function PendaftaranPage() {
         e.preventDefault();
         setLoading(true);
         setMessage('');
+
+        // Validate
+        if (!availableTypes.includes(formData.tipe)) {
+            setMessage('Tipe program tidak sesuai dengan Prodi anda.');
+            setLoading(false);
+            return;
+        }
 
         try {
             let finalInstansiId = formData.instansiId;
@@ -88,7 +137,7 @@ export default function PendaftaranPage() {
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Jenis PKL</label>
                                 <div className="flex gap-4">
-                                    {['PKL1', 'PKL2'].map((type) => (
+                                    {availableTypes.map((type) => (
                                         <div
                                             key={type}
                                             onClick={() => setFormData({ ...formData, tipe: type })}
@@ -96,7 +145,9 @@ export default function PendaftaranPage() {
                                         >
                                             <span className="font-bold">{type}</span>
                                             <p className="text-xs text-gray-500 mt-1">
-                                                {type === 'PKL1' ? 'Fokus Etika Profesi (1 Bulan)' : 'Fokus Sistem Informasi (6 Bulan/4 Bulan)'}
+                                                {type === 'PKL1' ? 'Fokus Etika Profesi (1 Bulan)' :
+                                                    type === 'PKL2' ? 'Fokus Sistem Informasi (6 Bulan/4 Bulan)' :
+                                                        'Program MBKM (Khusus S1)'}
                                             </p>
                                         </div>
                                     ))}

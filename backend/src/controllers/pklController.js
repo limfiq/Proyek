@@ -313,8 +313,9 @@ exports.getDashboardStats = async (req, res) => {
         let stats = {
             periode: activePeriode,
             totalMahasiswa: 0,
-            breakdown: { PKL1: 0, PKL2: 0 },
-            statusStats: [],
+            breakdown: { PKL1: 0, PKL2: 0, MBKM: 0 },
+            statusStats: [], // Legacy format just in case
+            chartData: [], // New format for grouped bar chart
             recent: []
         };
 
@@ -361,22 +362,34 @@ exports.getDashboardStats = async (req, res) => {
 
             stats.totalMahasiswa = pendaftarans.length;
 
-            // 3. Breakdown by Tipe
-            pendaftarans.forEach(p => {
-                if (p.tipe === 'PKL1') stats.breakdown.PKL1++;
-                else if (p.tipe === 'PKL2') stats.breakdown.PKL2++;
-            });
-
-            // 4. Breakdown by Status for Chart
-            // Group by status
-            const statusCounts = pendaftarans.reduce((acc, curr) => {
-                acc[curr.status] = (acc[curr.status] || 0) + 1;
+            // Initialize chart data structure
+            const statuses = ['PENDING', 'APPROVED', 'ACTIVE', 'REJECTED', 'COMPLETED'];
+            const chartMap = statuses.reduce((acc, status) => {
+                acc[status] = { name: status, PKL1: 0, PKL2: 0, MBKM: 0 };
                 return acc;
             }, {});
 
-            stats.statusStats = Object.keys(statusCounts).map(key => ({
-                name: key,
-                value: statusCounts[key]
+            // Iterate pendaftarans
+            pendaftarans.forEach(p => {
+                // Breakdown Count
+                if (p.tipe === 'PKL1') stats.breakdown.PKL1++;
+                else if (p.tipe === 'PKL2') stats.breakdown.PKL2++;
+                else if (p.tipe === 'MBKM') stats.breakdown.MBKM++;
+
+                // Chart Data Populate
+                if (chartMap[p.status]) {
+                    if (p.tipe === 'PKL1') chartMap[p.status].PKL1++;
+                    else if (p.tipe === 'PKL2') chartMap[p.status].PKL2++;
+                    else if (p.tipe === 'MBKM') chartMap[p.status].MBKM++;
+                }
+            });
+
+            stats.chartData = Object.values(chartMap);
+
+            // Legacy statusStats (Aggregate)
+            stats.statusStats = stats.chartData.map(item => ({
+                name: item.name,
+                value: item.PKL1 + item.PKL2 + item.MBKM
             }));
 
             // 5. Recent registrations (last 5)

@@ -5,17 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Pencil, Search, FileSpreadsheet, Download } from 'lucide-react';
 import api from '@/lib/api';
 import { Pagination } from '@/components/ui/pagination';
 
 export default function MasterUsersPage() {
     const [users, setUsers] = useState([]);
+    const [prodiList, setProdiList] = useState([]); // [NEW]
     const [loading, setLoading] = useState(false);
     const [form, setForm] = useState({ username: '', password: '', role: 'MAHASISWA' });
-    const [profile, setProfile] = useState({ nama: '', nim: '', nidn: '', kelas: '', angkatan: '' });
+    const [profile, setProfile] = useState({ nama: '', nim: '', nidn: '', kelas: '', angkatan: '', prodiId: '' });
+    const [editingId, setEditingId] = useState(null);
+    const [searchQuery, setSearchQuery] = useState(''); // [NEW]
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
+
+    const [isImporting, setIsImporting] = useState(false);
 
     useEffect(() => {
         loadUsers();
@@ -23,14 +28,18 @@ export default function MasterUsersPage() {
 
     const loadUsers = async () => {
         try {
-            const res = await api.get('/api/users');
-            setUsers(res.data);
+            const [resUsers, resProdi] = await Promise.all([
+                api.get('/api/users'),
+                api.get('/api/prodi').catch(() => ({ data: [] })) // Handle if endpoint not ready
+            ]);
+            setUsers(resUsers.data);
+            setProdiList(resProdi.data);
         } catch (err) {
             console.error(err);
         }
     };
 
-    const handleCreate = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         try {
@@ -43,21 +52,155 @@ export default function MasterUsersPage() {
                     payload.profileData.nim = profile.nim;
                     payload.profileData.kelas = profile.kelas;
                     payload.profileData.angkatan = profile.angkatan;
+                    payload.profileData.prodiId = profile.prodiId;
                 } else if (form.role === 'DOSEN') {
                     payload.profileData.nidn = profile.nidn;
                 }
             }
 
-            await api.post('/api/users', payload);
-            alert('User created!');
-            setForm({ username: '', password: '', role: 'MAHASISWA' });
-            setProfile({ nama: '', nim: '', nidn: '', kelas: '', angkatan: '' });
+            if (editingId) {
+                await api.put(`/api/users/${editingId}`, payload);
+                alert('User updated!');
+            } else {
+                await api.post('/api/users', payload);
+                alert('User created!');
+            }
+
+            resetForm();
             loadUsers();
         } catch (err) {
-            alert(err.response?.data?.message || 'Failed to create user');
+            console.error(err);
+            alert(err.response?.data?.message || 'Failed to save user');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsImporting(true);
+        const reader = new FileReader();
+
+        reader.onload = async (event) => {
+            const text = event.target.result;
+            const rows = text.split('\n').map(row => row.split(','));
+
+            // Header Check: Username,Password,Role,Nama,NIM_NIDN,Kelas,Angkatan,Prodi
+            let dataRows = rows;
+            if (rows.length > 0 && rows[0][0] && rows[0][0].toLowerCase().includes('username')) {
+                dataRows = rows.slice(1);
+            }
+
+            let successCount = 0;
+            let failCount = 0;
+            const errors = [];
+
+            for (const row of dataRows) {
+                if (row.length < 3) continue; // Skip if not enough cols
+
+                // Helper to safely get value
+                const getVal = (idx) => row[idx]?.trim() || '';
+
+                const username = getVal(0);
+                const password = getVal(1);
+                const role = getVal(2).toUpperCase();
+                const nama = getVal(3);
+                const nomerInduk = getVal(4); // NIM or NIDN
+
+                // If username empty, skip
+                if (!username) continue;
+
+                // Construct base payload
+                const payload = {
+                    username,
+                    password: password || username, // Default pwd = username if empty
+                    role,
+                    profileData: {
+                        nama: nama
+                    }
+                };
+
+                // Add specifics
+                if (role === 'MAHASISWA') {
+                    payload.profileData.nim = nomerInduk;
+                    payload.profileData.kelas = getVal(5);
+                    payload.profileData.angkatan = getVal(6);
+                    const prodiName = getVal(7);
+
+                    // Match prodi
+                    const foundProdi = prodiList.find(p => p.nama.toLowerCase() === prodiName.toLowerCase());
+                    if (foundProdi) {
+                        payload.profileData.prodiId = String(foundProdi.id);
+                    }
+                } else if (role === 'DOSEN') {
+                    payload.profileData.nidn = nomerInduk;
+                }
+
+                try {
+                    await api.post('/api/users', payload);
+                    successCount++;
+                } catch (err) {
+                    console.error(`Failed to import ${username}:`, err.message);
+                    failCount++;
+                    errors.push(`${username}: ${err.response?.data?.message || err.message}`);
+                }
+            }
+
+            let msg = `Import Finished.\nSuccess: ${successCount}\nFailed: ${failCount}`;
+            if (errors.length > 0) msg += `\nErrors:\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? '...' : ''}`;
+            alert(msg);
+
+            setIsImporting(false);
+            loadUsers();
+            e.target.value = null;
+        };
+        reader.readAsText(file);
+    };
+
+    const handleDownloadTemplate = () => {
+        const header = 'Username,Password,Role,Nama,NIM_NIDN,Kelas,Angkatan,Prodi\n';
+        const sample1 = 'mhs1,mhs123,MAHASISWA,Budi Santoso,12345678,3A,2023,Teknik Informatika\n';
+        const sample2 = 'dosen1,dosen123,DOSEN,Dr. Agus,98765432,,,,\n';
+        const blob = new Blob([header + sample1 + sample2], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'template_users.csv';
+        a.click();
+    };
+
+    const handleEdit = (user) => {
+        setEditingId(user.id);
+        const newForm = { username: user.username, password: '', role: user.role };
+        setForm(newForm);
+
+        const newProfile = { nama: '', nim: '', nidn: '', kelas: '', angkatan: '', prodiId: '' };
+
+        if (user.role === 'MAHASISWA' && user.mahasiswa) {
+            newProfile.nama = user.mahasiswa.nama || '';
+            newProfile.nim = user.mahasiswa.nim || '';
+            newProfile.kelas = user.mahasiswa.kelas || '';
+            newProfile.angkatan = user.mahasiswa.angkatan || '';
+
+            if (user.mahasiswa.prodi) {
+                newProfile.prodiId = String(user.mahasiswa.prodi.id);
+            }
+        } else if (user.role === 'DOSEN' && user.dosen) {
+            newProfile.nama = user.dosen.nama || '';
+            newProfile.nidn = user.dosen.nidn || '';
+        } else if (user.role === 'INSTANSI' && user.instansi) {
+            newProfile.nama = user.instansi.nama || '';
+        }
+        setProfile(newProfile);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const resetForm = () => {
+        setForm({ username: '', password: '', role: 'MAHASISWA' });
+        setProfile({ nama: '', nim: '', nidn: '', kelas: '', angkatan: '', prodiId: '' });
+        setEditingId(null);
     };
 
     const handleDelete = async (id) => {
@@ -70,8 +213,20 @@ export default function MasterUsersPage() {
         }
     };
 
-    const totalPages = Math.ceil(users.length / itemsPerPage);
-    const paginatedUsers = users.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    const filteredUsers = users.filter(user => {
+        const query = searchQuery.toLowerCase();
+        const username = user.username.toLowerCase();
+
+        let profileName = '';
+        if (user.role === 'MAHASISWA') profileName = user.mahasiswa?.nama || '';
+        else if (user.role === 'DOSEN') profileName = user.dosen?.nama || '';
+        else if (user.role === 'INSTANSI') profileName = user.instansi?.nama || '';
+
+        return username.includes(query) || profileName.toLowerCase().includes(query);
+    });
+
+    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+    const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
         <div className="space-y-6">
@@ -79,18 +234,18 @@ export default function MasterUsersPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Tambah User Baru</CardTitle>
+                    <CardTitle>{editingId ? 'Edit User' : 'Tambah User Baru'}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <form onSubmit={handleCreate} className="space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Username</label>
                                 <Input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} required />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Password</label>
-                                <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required />
+                                <label className="text-sm font-medium">Password {editingId && '(Leave blank to keep current)'}</label>
+                                <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required={!editingId} />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Role</label>
@@ -124,6 +279,17 @@ export default function MasterUsersPage() {
                                         <label className="text-sm font-medium">Angkatan</label>
                                         <Input value={profile.angkatan} onChange={e => setProfile({ ...profile, angkatan: e.target.value })} />
                                     </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Prodi</label>
+                                        <Select value={profile.prodiId} onValueChange={val => setProfile({ ...profile, prodiId: val })}>
+                                            <SelectTrigger><SelectValue placeholder="Pilih Prodi" /></SelectTrigger>
+                                            <SelectContent>
+                                                {prodiList.map(p => (
+                                                    <SelectItem key={p.id} value={String(p.id)}>{p.nama} ({p.jenjang})</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </>
                             )}
                             {form.role === 'DOSEN' && (
@@ -133,10 +299,52 @@ export default function MasterUsersPage() {
                                 </div>
                             )}
                         </div>
-                        <Button type="submit" disabled={loading}>Create User</Button>
+                        <div className="flex gap-2">
+                            <Button type="submit" disabled={loading}>{editingId ? 'Update User' : 'Create User'}</Button>
+                            {editingId && (
+                                <Button type="button" variant="outline" onClick={resetForm}>Cancel</Button>
+                            )}
+                        </div>
                     </form>
                 </CardContent>
             </Card>
+
+            <div className="flex justify-between items-center bg-white p-4 rounded-md border gap-4">
+                <div className="relative w-full max-w-sm">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                    <Input
+                        type="search"
+                        placeholder="Search by username or name..."
+                        className="pl-9"
+                        value={searchQuery}
+                        onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setCurrentPage(1); // Reset page on search
+                        }}
+                    />
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={handleDownloadTemplate} title="Download Template CSV">
+                        <Download className="h-4 w-4 mr-2" />
+                        Template
+                    </Button>
+                    <label className="cursor-pointer">
+                        <Button variant="outline" size="sm" className="gap-2" asChild disabled={isImporting}>
+                            <span>
+                                <FileSpreadsheet className="h-4 w-4" />
+                                {isImporting ? 'Importing...' : 'Import Excel'}
+                            </span>
+                        </Button>
+                        <input
+                            type="file"
+                            accept=".csv"
+                            className="hidden"
+                            onChange={handleFileUpload}
+                            disabled={isImporting}
+                        />
+                    </label>
+                </div>
+            </div>
 
             <div className="rounded-md border bg-white">
                 <table className="w-full text-sm">
@@ -158,12 +366,18 @@ export default function MasterUsersPage() {
                                     {u.role === 'MAHASISWA' ? u.mahasiswa?.nama :
                                         u.role === 'DOSEN' ? u.dosen?.nama :
                                             u.role === 'INSTANSI' ? u.instansi?.nama : '-'}
+                                    {u.role === 'MAHASISWA' && u.mahasiswa?.prodi && (
+                                        <div className="text-xs text-gray-500">{u.mahasiswa.prodi.nama}</div>
+                                    )}
                                 </td>
                                 <td className="p-4">
                                     {u.role === 'MAHASISWA' ? u.mahasiswa?.nim :
                                         u.role === 'DOSEN' ? u.dosen?.nidn : '-'}
                                 </td>
                                 <td className="p-4 text-right">
+                                    <Button size="sm" variant="ghost" className="text-blue-500 mr-1" onClick={() => handleEdit(u)}>
+                                        <Pencil className="h-4 w-4" />
+                                    </Button>
                                     <Button size="sm" variant="ghost" className="text-red-500" onClick={() => handleDelete(u.id)}>
                                         <Trash2 className="h-4 w-4" />
                                     </Button>

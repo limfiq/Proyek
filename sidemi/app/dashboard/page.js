@@ -92,7 +92,7 @@ export default function DashboardPage() {
             return (
                 <div className="space-y-6">
                     {/* Key Metrics Cards */}
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Periode Aktif</CardTitle>
@@ -132,7 +132,16 @@ export default function DashboardPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">{stats.breakdown.PKL2}</div>
-                                <p className="text-xs text-muted-foreground">Proyek Sistem</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">MBKM</CardTitle>
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stats.breakdown.MBKM}</div>
+                                <p className="text-xs text-muted-foreground">Program MBKM</p>
                             </CardContent>
                         </Card>
                     </div>
@@ -145,16 +154,15 @@ export default function DashboardPage() {
                             </CardHeader>
                             <CardContent className="pl-2">
                                 <ResponsiveContainer width="100%" height={300}>
-                                    <BarChart data={stats.statusStats}>
+                                    <BarChart data={stats.chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                         <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                                        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
+                                        <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                                         <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                                        <Bar dataKey="value" fill="#2563eb" radius={[4, 4, 0, 0]}>
-                                            {stats.statusStats.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                            ))}
-                                        </Bar>
+                                        <Legend />
+                                        <Bar dataKey="PKL1" stackId="a" fill="#0088FE" radius={[0, 0, 4, 4]} />
+                                        <Bar dataKey="PKL2" stackId="a" fill="#00C49F" radius={[0, 0, 0, 0]} />
+                                        <Bar dataKey="MBKM" stackId="a" fill="#FFBB28" radius={[4, 4, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </CardContent>

@@ -18,9 +18,16 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover"
 import api from '@/lib/api';
-import { Plus, Calendar, User, UserCheck, Printer, Check, ChevronsUpDown } from 'lucide-react';
+import { Plus, Calendar, User, UserCheck, Printer, Check, ChevronsUpDown, Download, FileSpreadsheet, Search } from 'lucide-react';
 import { cn } from "@/lib/utils"
 import { Pagination } from '@/components/ui/pagination';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 export default function AdminSidangPage() {
     const [pendaftarans, setPendaftarans] = useState([]);
@@ -137,14 +144,142 @@ export default function AdminSidangPage() {
         { value: "Sesi 6", label: "11.45 - 12.30" },
     ];
 
-    const totalPages = Math.ceil(pendaftarans.length / itemsPerPage);
-    const paginatedPendaftarans = pendaftarans.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    // Pagination logic moved below filters
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterTipe, setFilterTipe] = useState('ALL');
+    const [pageSize, setPageSize] = useState(10);
+    const [isImporting, setIsImporting] = useState(false);
+
+    const handleDownloadTemplate = () => {
+        const header = 'NIM,Penguji,Tanggal,Ruang,Sesi\n';
+        const sample1 = '12345678,Dr. Budi Santoso,2023-12-01,Lab. Basis Data,Sesi 1\n';
+        const sample2 = '87654321,Siti Aminah M.Kom,2023-12-02,Ruang 3.2,Sesi 2\n';
+        const blob = new Blob([header + sample1 + sample2], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'template_jadwal_sidang.csv';
+        a.click();
+    };
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsImporting(true);
+        const reader = new FileReader();
+
+        reader.onload = async (event) => {
+            const text = event.target.result;
+            const rows = text.split('\n').map(row => row.split(','));
+
+            // Header Check: NIM,Penguji,Tanggal,Ruang,Sesi
+            let dataRows = rows;
+            if (rows.length > 0 && rows[0][0] && rows[0][0].toLowerCase().includes('nim')) {
+                dataRows = rows.slice(1);
+            }
+
+            let successCount = 0;
+            let failCount = 0;
+            const errors = [];
+
+            for (const row of dataRows) {
+                if (row.length < 5) continue;
+                const nim = row[0]?.trim();
+                const pengujiName = row[1]?.trim();
+                const tanggal = row[2]?.trim();
+                const ruang = row[3]?.trim();
+                const sesi = row[4]?.trim();
+
+                if (!nim) continue;
+
+                // 1. Find Pendaftar by NIM
+                const studentReg = pendaftarans.find(p => p.mahasiswa?.nim === nim);
+                if (!studentReg) {
+                    failCount++;
+                    errors.push(`${nim}: Mahasiswa not found or not eligible`);
+                    continue;
+                }
+
+                // 2. Find Penguji by Name
+                const penguji = dosens.find(d =>
+                    (d.dosen?.nama && d.dosen.nama.toLowerCase() === pengujiName.toLowerCase()) ||
+                    (d.username && d.username.toLowerCase() === pengujiName.toLowerCase())
+                );
+                if (!penguji) {
+                    failCount++;
+                    errors.push(`${nim}: Penguji '${pengujiName}' not found`);
+                    continue;
+                }
+
+                try {
+                    await api.post('/api/sidang/schedule', {
+                        pendaftaranId: studentReg.id,
+                        dosenPengujiId: String(penguji.dosen?.id || penguji.id), // Fallback if dosen relation missing but user exists
+                        tanggal: tanggal,
+                        ruang: ruang,
+                        sesi: sesi
+                    });
+                    successCount++;
+                } catch (err) {
+                    console.error(`Failed to import ${nim}:`, err.message);
+                    failCount++;
+                    errors.push(`${nim}: ${err.response?.data?.message || err.message}`);
+                }
+            }
+
+            let msg = `Import Finished.\nSuccess: ${successCount}\nFailed: ${failCount}`;
+            if (errors.length > 0) msg += `\nErrors:\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? '...' : ''}`;
+            alert(msg);
+
+            setIsImporting(false);
+            loadData();
+            e.target.value = null;
+        };
+
+        reader.readAsText(file);
+    };
+
+    // Filter Logic
+    const filteredPendaftarans = pendaftarans.filter(reg => {
+        const query = searchQuery.toLowerCase();
+        const mhsName = reg.mahasiswa?.nama?.toLowerCase() || '';
+        const mhsNim = reg.mahasiswa?.nim?.toLowerCase() || '';
+        const matchesSearch = mhsName.includes(query) || mhsNim.includes(query);
+        const matchesTipe = filterTipe === 'ALL' || reg.tipe === filterTipe;
+        return matchesSearch && matchesTipe;
+    });
+
+    const totalPages = Math.ceil(filteredPendaftarans.length / (pageSize === 'ALL' ? filteredPendaftarans.length : pageSize));
+    const paginatedPendaftarans = pageSize === 'ALL'
+        ? filteredPendaftarans
+        : filteredPendaftarans.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center no-print">
                 <h1 className="text-2xl font-bold text-gray-800">Jadwal Sidang PKL</h1>
                 <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={handleDownloadTemplate} title="Download Template CSV">
+                        <Download className="h-4 w-4 mr-2" />
+                        Template
+                    </Button>
+                    <label htmlFor="csv-upload" className="cursor-pointer">
+                        <Button variant="outline" size="sm" className="hidden md:flex gap-2" asChild disabled={isImporting}>
+                            <span>
+                                <FileSpreadsheet className="h-4 w-4" />
+                                {isImporting ? 'Importing...' : 'Import CSV'}
+                            </span>
+                        </Button>
+                        <input
+                            id="csv-upload"
+                            type="file"
+                            accept=".csv"
+                            className="hidden"
+                            onChange={handleFileUpload}
+                            disabled={isImporting}
+                        />
+                    </label>
                     <Button onClick={() => window.print()} variant="outline" className="shadow-sm">
                         <Printer className="h-4 w-4 mr-2" />
                         Cetak Jadwal
@@ -153,6 +288,47 @@ export default function AdminSidangPage() {
                         <Plus className="h-4 w-4 mr-2" />
                         Tambah Jadwal Sidang
                     </Button>
+                </div>
+            </div>
+
+            {/* Filters */}
+            <div className="bg-white p-4 rounded-lg shadow-sm border flex flex-col md:flex-row gap-4 justify-between items-center no-print">
+                <div className="relative w-full md:w-1/3">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                    <Input
+                        placeholder="Cari Mahasiswa atau NIM..."
+                        className="pl-9"
+                        value={searchQuery}
+                        onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                    />
+                </div>
+                <div className="flex gap-2 w-full md:w-auto">
+                    <Select value={filterTipe} onValueChange={val => { setFilterTipe(val); setCurrentPage(1); }}>
+                        <SelectTrigger className="w-[120px]">
+                            <SelectValue placeholder="Tipe" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">Semua Tipe</SelectItem>
+                            <SelectItem value="PKL1">PKL 1</SelectItem>
+                            <SelectItem value="PKL2">PKL 2</SelectItem>
+                            <SelectItem value="MBKM">MBKM</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <Select value={String(pageSize)} onValueChange={val => {
+                        setPageSize(val === 'ALL' ? 'ALL' : Number(val));
+                        setCurrentPage(1);
+                    }}>
+                        <SelectTrigger className="w-[120px]">
+                            <SelectValue placeholder="Show" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="10">10 / Page</SelectItem>
+                            <SelectItem value="20">20 / Page</SelectItem>
+                            <SelectItem value="50">50 / Page</SelectItem>
+                            <SelectItem value="ALL">Show All</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
 

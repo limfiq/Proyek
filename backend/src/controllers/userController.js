@@ -10,7 +10,7 @@ exports.findAll = async (req, res) => {
         const users = await User.findAll({
             attributes: ['id', 'username', 'role', 'createdAt'],
             include: [
-                { model: Mahasiswa, as: 'mahasiswa', attributes: ['id', 'nama', 'nim'] },
+                { model: Mahasiswa, as: 'mahasiswa', attributes: ['id', 'nama', 'nim', 'kelas', 'angkatan', 'prodiId'], include: [{ model: db.Prodi, as: 'prodi', attributes: ['id', 'nama', 'jenjang'] }] },
                 { model: Dosen, as: 'dosen', attributes: ['id', 'nama', 'nidn'] },
                 { model: Instansi, as: 'instansi', attributes: ['id', 'nama'] }
             ]
@@ -80,6 +80,56 @@ exports.delete = async (req, res) => {
         res.send({ message: 'User deleted' });
     } catch (err) {
         console.error('Error deleting user:', err);
+        res.status(500).send({ message: err.message });
+    }
+};
+
+exports.update = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { username, password, role, profileData } = req.body;
+
+        const user = await User.findByPk(id);
+        if (!user) return res.status(404).send({ message: 'User not found' });
+
+        user.username = username;
+        if (password && password.trim() !== '') {
+            user.password = await bcrypt.hash(password, 8);
+        }
+
+        // Only update role if changed (Note: switching roles might leave orphaned profile data, acceptable for now)
+        const oldRole = user.role;
+        user.role = role;
+        await user.save();
+
+        if (profileData) {
+            if (role === 'MAHASISWA') {
+                const existing = await Mahasiswa.findOne({ where: { userId: user.id } });
+                if (existing) {
+                    await existing.update(profileData);
+                } else {
+                    await Mahasiswa.create({ userId: user.id, ...profileData });
+                }
+            } else if (role === 'DOSEN') {
+                const existing = await Dosen.findOne({ where: { userId: user.id } });
+                if (existing) {
+                    await existing.update(profileData);
+                } else {
+                    await Dosen.create({ userId: user.id, ...profileData });
+                }
+            } else if (role === 'INSTANSI') {
+                const existing = await Instansi.findOne({ where: { userId: user.id } });
+                if (existing) {
+                    await existing.update(profileData);
+                } else {
+                    await Instansi.create({ userId: user.id, ...profileData });
+                }
+            }
+        }
+
+        res.send({ message: 'User updated' });
+    } catch (err) {
+        console.error(err);
         res.status(500).send({ message: err.message });
     }
 };
