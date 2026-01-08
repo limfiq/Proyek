@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { GradingForm } from '@/components/dashboard/GradingForm';
+import { FileText } from 'lucide-react';
 import api from '@/lib/api';
 
 export default function SidangPage() {
@@ -18,7 +19,19 @@ export default function SidangPage() {
         try {
             // Fetch students assigned to this user (Dosen Penguji)
             const res = await api.get('/api/pkl/ujian');
-            setStudents(res.data);
+            const studentData = res.data;
+
+            // Fetch report for each student
+            const studentsWithReports = await Promise.all(studentData.map(async (student) => {
+                try {
+                    const reportRes = await api.get(`/api/laporan/akhir?pendaftaranId=${student.id}`);
+                    return { ...student, laporanAkhir: reportRes.data };
+                } catch (error) {
+                    return { ...student, laporanAkhir: null };
+                }
+            }));
+
+            setStudents(studentsWithReports);
         } catch (err) {
             console.error(err);
         }
@@ -41,6 +54,23 @@ export default function SidangPage() {
                                     {mhs.tipe}
                                 </div>
                                 {mhs.judulProject && <p className="text-sm italic">"{mhs.judulProject}"</p>}
+
+                                {mhs.laporanAkhir ? (
+                                    <a
+                                        href={mhs.laporanAkhir.fileUrl || mhs.laporanAkhir}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-sm text-blue-600 hover:underline flex items-center gap-1 mt-1"
+                                    >
+                                        <FileText className="h-4 w-4" />
+                                        Lihat Laporan Akhir
+                                    </a>
+                                ) : (
+                                    <p className="text-xs text-gray-400 italic mt-1 flex items-center gap-1">
+                                        <FileText className="h-4 w-4" />
+                                        Belum upload laporan akhir
+                                    </p>
+                                )}
 
                                 <Button
                                     size="sm"
