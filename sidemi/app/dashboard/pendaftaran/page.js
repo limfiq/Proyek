@@ -29,6 +29,15 @@ export default function PendaftaranPage() {
         checkStatus();
     }, []);
 
+    const loadInstansi = async () => {
+        try {
+            const res = await api.get('/api/instansi');
+            setInstansiList(res.data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     const checkStatus = async () => {
         try {
             const res = await api.get('/api/pkl/me');

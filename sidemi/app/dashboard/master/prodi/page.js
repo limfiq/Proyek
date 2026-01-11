@@ -4,18 +4,24 @@ import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Pagination } from '@/components/ui/pagination';
 
 export default function MasterProdiPage() {
     const [prodiList, setProdiList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [open, setOpen] = useState(false);
     const [form, setForm] = useState({ id: null, nama: '', jenjang: 'D3' });
+
+    // Pagination & Search State
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState("5");
 
     useEffect(() => {
         loadData();
@@ -65,6 +71,27 @@ export default function MasterProdiPage() {
         setOpen(true);
     };
 
+    // Filter Logic
+    const filteredProdi = prodiList.filter(item =>
+        item.nama?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Pagination Logic
+    const totalItems = filteredProdi.length;
+    const totalPages = itemsPerPage === 'all' ? 1 : Math.ceil(totalItems / parseInt(itemsPerPage));
+
+    const paginatedProdi = itemsPerPage === 'all'
+        ? filteredProdi
+        : filteredProdi.slice(
+            (currentPage - 1) * parseInt(itemsPerPage),
+            currentPage * parseInt(itemsPerPage)
+        );
+
+    // Reset page when search or itemsPerPage changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, itemsPerPage]);
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -76,27 +103,58 @@ export default function MasterProdiPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Daftar Prodi</CardTitle>
+                    <div className="flex flex-col md:flex-row justify-between gap-4">
+                        <CardTitle>Daftar Prodi</CardTitle>
+                        <div className="flex items-center gap-2">
+                            <div className="relative w-full md:w-64">
+                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Cari prodi..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-8"
+                                />
+                            </div>
+                            <Select
+                                value={itemsPerPage}
+                                onValueChange={(value) => setItemsPerPage(value)}
+                            >
+                                <SelectTrigger className="w-[130px]">
+                                    <SelectValue placeholder="Show" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="5">5 Baris</SelectItem>
+                                    <SelectItem value="10">10 Baris</SelectItem>
+                                    <SelectItem value="25">25 Baris</SelectItem>
+                                    <SelectItem value="all">Semua</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>No</TableHead>
+                                <TableHead className="w-[50px]">No</TableHead>
                                 <TableHead>Nama Prodi</TableHead>
                                 <TableHead>Jenjang</TableHead>
                                 <TableHead className="text-right">Aksi</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {prodiList.length === 0 && !loading && (
+                            {paginatedProdi.length === 0 && !loading && (
                                 <TableRow>
                                     <TableCell colSpan={4} className="text-center py-4 text-gray-400">Belum ada data</TableCell>
                                 </TableRow>
                             )}
-                            {prodiList.map((item, index) => (
+                            {paginatedProdi.map((item, index) => (
                                 <TableRow key={item.id}>
-                                    <TableCell>{index + 1}</TableCell>
+                                    <TableCell>
+                                        {itemsPerPage === 'all'
+                                            ? index + 1
+                                            : (currentPage - 1) * parseInt(itemsPerPage) + index + 1}
+                                    </TableCell>
                                     <TableCell className="font-medium">{item.nama}</TableCell>
                                     <TableCell>
                                         <span className={`px-2 py-1 rounded text-xs font-bold ${item.jenjang === 'S1' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
@@ -115,6 +173,14 @@ export default function MasterProdiPage() {
                             ))}
                         </TableBody>
                     </Table>
+
+                    <div className="mt-4">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                        />
+                    </div>
                 </CardContent>
             </Card>
 

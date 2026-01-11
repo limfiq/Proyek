@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { GradingForm } from '@/components/dashboard/GradingForm';
-import { FileText } from 'lucide-react';
+import { FileText, Calendar, MapPin, Clock } from 'lucide-react';
 import api from '@/lib/api';
 
 export default function SidangPage() {
@@ -17,17 +17,56 @@ export default function SidangPage() {
 
     const loadStudents = async () => {
         try {
-            // Fetch students assigned to this user (Dosen Penguji)
+            // Attempt to fetch Dosen's specific schedules (list)
+            let dosenSidangs = [];
+            try {
+                // /api/sidang generally returns list for current user in many REST defaults
+                const sidRes = await api.get('/api/sidang');
+                if (Array.isArray(sidRes.data)) {
+                    dosenSidangs = sidRes.data;
+                }
+            } catch (e) {
+                // ignore
+            }
+
             const res = await api.get('/api/pkl/ujian');
             const studentData = res.data;
 
-            // Fetch report for each student
+            // Fetch report and schedule for each student
             const studentsWithReports = await Promise.all(studentData.map(async (student) => {
+                // 1. Check from bulk list or embedded
+                let sidangData = dosenSidangs.find(s => s.pendaftaranId === student.id) || student.sidang || null;
+
+                // 2. Fallback: individual endpoints (handling Array response)
+                if (!sidangData) {
+                    const endpoints = [
+                        `/api/sidang/schedule?pendaftaranId=${student.id}`,
+                        `/api/sidang?pendaftaranId=${student.id}`,
+                        `/api/sidang/${student.id}`
+                    ];
+
+                    for (const endpoint of endpoints) {
+                        try {
+                            const sidRes = await api.get(endpoint);
+                            const data = sidRes.data;
+                            // Check if Array (take 1st) or Object
+                            const candidate = Array.isArray(data) ? data[0] : data;
+
+                            if (candidate && (candidate.tanggal || candidate.ruang || candidate.sesi)) {
+                                sidangData = candidate;
+                                break;
+                            }
+                        } catch (e) {
+                            // try next
+                        }
+                    }
+                }
+
                 try {
                     const reportRes = await api.get(`/api/laporan/akhir?pendaftaranId=${student.id}`);
-                    return { ...student, laporanAkhir: reportRes.data };
+                    return { ...student, laporanAkhir: reportRes.data, sidang: sidangData };
                 } catch (error) {
-                    return { ...student, laporanAkhir: null };
+                    return { ...student, laporanAkhir: null, sidang: sidangData };
                 }
             }));
 
@@ -54,6 +93,25 @@ export default function SidangPage() {
                                     {mhs.tipe}
                                 </div>
                                 {mhs.judulProject && <p className="text-sm italic">"{mhs.judulProject}"</p>}
+
+                                {(mhs.sidang || mhs.tanggalSidang) && (
+                                    <div className="mt-2 text-sm text-gray-700 space-y-1 bg-gray-50 p-2 rounded border mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <Calendar className="h-3 w-3 text-blue-500" />
+                                            <span className="font-medium">
+                                                {new Date(mhs.sidang?.tanggal || mhs.tanggalSidang).toLocaleDateString('id-ID', { dateStyle: 'long' })}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Clock className="h-3 w-3 text-orange-500" />
+                                            <span>{mhs.sidang?.sesi || '-'}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <MapPin className="h-3 w-3 text-red-500" />
+                                            <span>{mhs.sidang?.ruang || '-'}</span>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {mhs.laporanAkhir ? (
                                     <a

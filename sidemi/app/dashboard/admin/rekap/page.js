@@ -77,7 +77,8 @@ export default function AdminRekapPage() {
         if (!selectedPeriod) return;
         setLoading(true);
         try {
-            const res = await api.get(`/api/nilai/rekap?periodeId=${selectedPeriod}`);
+            // Add timestamp to prevent caching
+            const res = await api.get(`/api/nilai/rekap?periodeId=${selectedPeriod}&t=${new Date().getTime()}`);
             setRecap(res.data);
         } catch (err) {
             console.error(err);
@@ -116,16 +117,39 @@ export default function AdminRekapPage() {
 
     const handleSaveNilai = async () => {
         try {
+            // Convert values to meaningful numbers/dates/strings as required by backend
+            // Process scores: Convert empty strings to 0 or null, and others to float
+            const processedScores = {};
+            Object.keys(editForm).forEach(key => {
+                const val = editForm[key];
+                // checking if it is a number-like string
+                if (val !== '' && val !== null && !isNaN(val)) {
+                    processedScores[key] = parseFloat(val);
+                } else {
+                    processedScores[key] = 0; // or null, depending on backend requirement. defaulting to 0 for safety as text inputs are "number"
+                }
+            });
+
+            // Backend aggregation removed to prevent crash
+
+            console.log('Sending payload:', {
+                pendaftaranId: selectedStudent.id,
+                scores: processedScores
+            });
+
             await api.post('/api/nilai/admin', {
                 pendaftaranId: selectedStudent.id,
-                scores: editForm
+                scores: processedScores
             });
+
             setEditOpen(false);
-            loadRecap(); // Reload to show updated scores
+            // specific cache busting might be handled by axios config or server headers, 
+            // but just calling loadRecap should trigger a new GET.
+            await loadRecap();
             alert("Nilai berhasil disimpan");
         } catch (err) {
-            console.error(err);
-            alert("Gagal menyimpan nilai");
+            console.error('Failed to save values:', err);
+            alert("Gagal menyimpan nilai: " + (err.response?.data?.message || err.message));
         }
     };
 
@@ -216,13 +240,13 @@ export default function AdminRekapPage() {
                 </TabsList>
 
                 <TabsContent value="PKL1">
-                    <RecapTable data={paginatedRecap} handleEdit={handleEdit} renderScore={renderScore} />
+                    <RecapTable data={paginatedRecap} handleEdit={handleEdit} renderScore={renderScore} kriteriaList={kriteriaList} />
                 </TabsContent>
                 <TabsContent value="PKL2">
-                    <RecapTable data={paginatedRecap} handleEdit={handleEdit} renderScore={renderScore} />
+                    <RecapTable data={paginatedRecap} handleEdit={handleEdit} renderScore={renderScore} kriteriaList={kriteriaList} />
                 </TabsContent>
                 <TabsContent value="MBKM">
-                    <RecapTable data={paginatedRecap} handleEdit={handleEdit} renderScore={renderScore} />
+                    <RecapTable data={paginatedRecap} handleEdit={handleEdit} renderScore={renderScore} kriteriaList={kriteriaList} />
                 </TabsContent>
             </Tabs>
 
@@ -284,7 +308,43 @@ export default function AdminRekapPage() {
     );
 }
 
-function RecapTable({ data, handleEdit, renderScore }) {
+function RecapTable({ data, handleEdit, renderScore, kriteriaList }) {
+    const getGrade = (val) => {
+        const s = parseFloat(val);
+        if (isNaN(s)) return '-';
+        if (s <= 10) return 'E';
+        if (s <= 20) return 'DE';
+        if (s <= 30) return 'D';
+        if (s <= 40) return 'CD';
+        if (s <= 50) return 'C';
+        if (s <= 60) return 'BC';
+        if (s <= 70) return 'B';
+        if (s <= 80) return 'AB';
+        return 'A';
+    };
+
+    const getRoleScore = (item, role) => {
+        if (!kriteriaList?.length) return item.scores[role];
+        const criteria = kriteriaList.filter(k => k.tipe === item.tipe && k.role === role);
+        if (!criteria.length) return item.scores[role];
+
+        let totalW = 0, totalS = 0, found = false;
+        criteria.forEach(k => {
+            const val = item.detailed?.[k.id];
+            if (val !== undefined && val !== null) {
+                totalS += (parseFloat(val) || 0) * k.bobot;
+                totalW += k.bobot;
+                found = true;
+            }
+        });
+
+        // If we found details and have weight, calc average. 
+        // Note: item.scores[role] might be 0/null if backend failed.
+        if (found && totalW > 0) return (totalS / totalW).toFixed(2);
+
+        return item.scores[role];
+    };
+
     return (
         <Card id="printable-area">
             <CardHeader>
@@ -303,6 +363,7 @@ function RecapTable({ data, handleEdit, renderScore }) {
                                 <TableHead className="text-center">Penguji</TableHead>
                                 <TableHead className="text-center">Instansi</TableHead>
                                 <TableHead className="text-right">Nilai Akhir</TableHead>
+                                <TableHead className="text-center">Nilai Huruf</TableHead>
                                 <TableHead className="text-right no-print">Aksi</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -321,16 +382,19 @@ function RecapTable({ data, handleEdit, renderScore }) {
                                         {renderScore(item.scores.MONEV, item.status.MONEV)}
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        {renderScore(item.scores.PEMBIMBING, item.status.PEMBIMBING)}
+                                        {renderScore(getRoleScore(item, 'PEMBIMBING'), item.status.PEMBIMBING || parseFloat(getRoleScore(item, 'PEMBIMBING')) > 0)}
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        {renderScore(item.scores.PENGUJI, item.status.PENGUJI)}
+                                        {renderScore(getRoleScore(item, 'PENGUJI'), item.status.PENGUJI || parseFloat(getRoleScore(item, 'PENGUJI')) > 0)}
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        {renderScore(item.scores.INSTANSI, item.status.INSTANSI)}
+                                        {renderScore(getRoleScore(item, 'INSTANSI'), item.status.INSTANSI || parseFloat(getRoleScore(item, 'INSTANSI')) > 0)}
                                     </TableCell>
                                     <TableCell className="text-right font-bold text-lg">
                                         {item.finalScore}
+                                    </TableCell>
+                                    <TableCell className="text-center font-bold text-lg">
+                                        {getGrade(item.finalScore)}
                                     </TableCell>
                                     <TableCell className="text-right no-print">
                                         {parseFloat(item.finalScore) > 0 ? (
@@ -347,7 +411,7 @@ function RecapTable({ data, handleEdit, renderScore }) {
                             ))}
                             {data.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                                    <TableCell colSpan={10} className="text-center py-8 text-gray-500">
                                         Belum ada data nilai.
                                     </TableCell>
                                 </TableRow>
