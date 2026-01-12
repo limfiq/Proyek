@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { GradingForm } from '@/components/dashboard/GradingForm';
-import { FileText, Calendar, MapPin, Clock } from 'lucide-react';
+import { FileText, Calendar, MapPin, Clock, ExternalLink } from 'lucide-react';
 import api from '@/lib/api';
 
 export default function SidangPage() {
@@ -128,6 +128,18 @@ export default function SidangPage() {
                                         <FileText className="h-4 w-4" />
                                         Belum upload laporan akhir
                                     </p>
+                                )}
+
+                                {mhs.laporanAkhir?.ikuUrl && (
+                                    <a
+                                        href={mhs.laporanAkhir.ikuUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-sm text-orange-600 hover:underline flex items-center gap-1 mt-1"
+                                    >
+                                        <ExternalLink className="h-4 w-4" />
+                                        Lihat Bukti {mhs.laporanAkhir.type_iku || 'IKU'}
+                                    </a>
                                 )}
 
                                 <Button

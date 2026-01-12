@@ -12,8 +12,8 @@ exports.findAll = async (req, res) => {
 
 exports.create = async (req, res) => {
     try {
-        const { nama, isActive } = req.body;
-        const periode = await Periode.create({ nama, isActive });
+        const { nama, tanggalMulai, tanggalSelesai, isActive } = req.body;
+        const periode = await Periode.create({ nama, tanggalMulai, tanggalSelesai, isActive });
         res.send(periode);
     } catch (err) {
         res.status(500).send({ message: err.message });
@@ -23,7 +23,8 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const id = req.params.id;
-        await Periode.update(req.body, { where: { id: id } });
+        const { nama, tanggalMulai, tanggalSelesai, isActive } = req.body;
+        await Periode.update({ nama, tanggalMulai, tanggalSelesai, isActive }, { where: { id: id } });
         res.send({ message: "Periode was updated successfully." });
     } catch (err) {
         res.status(500).send({ message: err.message });

@@ -29,7 +29,7 @@ export default function AdminLaporanPage() {
 
     const [editOpen, setEditOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
-    const [uploadForm, setUploadForm] = useState({ fileUrl: '' });
+    const [uploadForm, setUploadForm] = useState({ fileUrl: '', type_iku: '', ikuUrl: '' });
 
     useEffect(() => {
         loadData();
@@ -133,7 +133,9 @@ export default function AdminLaporanPage() {
         setSelectedStudent(student);
         const akhir = getLatestLaporan(student.stats?.laporanAkhir);
         setUploadForm({
-            fileUrl: akhir?.fileUrl || ''
+            fileUrl: akhir?.fileUrl || '',
+            type_iku: akhir?.type_iku || '',
+            ikuUrl: akhir?.ikuUrl || ''
         });
         setEditOpen(true);
     };
@@ -225,6 +227,7 @@ export default function AdminLaporanPage() {
                                     <TableHead className="text-center">Logbook Mingguan</TableHead>
                                     <TableHead className="text-center">Laporan Tengah</TableHead>
                                     <TableHead className="text-center">Laporan Akhir</TableHead>
+                                    <TableHead className="text-center">Bukti IKU</TableHead>
                                     <TableHead className="text-right no-print">Aksi</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -266,11 +269,29 @@ export default function AdminLaporanPage() {
                                                         const url = akhir.fileUrl.startsWith('http') ? akhir.fileUrl : `https://${akhir.fileUrl}`;
                                                         return (
                                                             <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center text-blue-600 hover:underline text-xs gap-1">
-                                                                <FileText className="h-3 w-3" /> Lihat
+                                                                <FileText className="h-3 w-3" /> Lihat Laporan
                                                             </a>
                                                         );
                                                     }
                                                     return <span className="text-red-400 text-xs italic">Belum</span>;
+                                                })()
+                                            ) : <span className="text-gray-300">...</span>}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            {item.stats ? (
+                                                (() => {
+                                                    const akhir = getLatestLaporan(item.stats.laporanAkhir);
+                                                    if (akhir && akhir.ikuUrl) {
+                                                        const url = akhir.ikuUrl.startsWith('http') ? akhir.ikuUrl : `https://${akhir.ikuUrl}`;
+                                                        return (
+                                                            <div className="flex flex-col gap-1 items-center">
+                                                                <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center text-orange-600 hover:underline text-xs gap-1">
+                                                                    <ExternalLink className="h-3 w-3" /> {akhir.type_iku || 'Bukti'}
+                                                                </a>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return <span className="text-gray-300 text-xs">-</span>;
                                                 })()
                                             ) : <span className="text-gray-300">...</span>}
                                         </TableCell>
@@ -320,6 +341,31 @@ export default function AdminLaporanPage() {
                                 placeholder="https://..."
                                 value={uploadForm.fileUrl}
                                 onChange={(e) => setUploadForm({ ...uploadForm, fileUrl: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold">Jenis IKU / IKT</label>
+                            <Select
+                                value={uploadForm.type_iku}
+                                onValueChange={(val) => setUploadForm({ ...uploadForm, type_iku: val })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Pilih Jenis IKU/IKT" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="IKU 6">IKU 6</SelectItem>
+                                    <SelectItem value="IKT 1">IKT 1</SelectItem>
+                                    <SelectItem value="IKT 2">IKT 2</SelectItem>
+                                    <SelectItem value="IKT 3">IKT 3</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold">Link Bukti IKU/IKT (Google Drive)</label>
+                            <Input
+                                placeholder="https://..."
+                                value={uploadForm.ikuUrl}
+                                onChange={(e) => setUploadForm({ ...uploadForm, ikuUrl: e.target.value })}
                             />
                         </div>
                     </div>

@@ -12,6 +12,14 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: false
         },
+        tanggalMulai: {
+            type: DataTypes.DATEONLY,
+            allowNull: true
+        },
+        tanggalSelesai: {
+            type: DataTypes.DATEONLY,
+            allowNull: true
+        },
         isActive: {
             type: DataTypes.BOOLEAN,
             defaultValue: false
