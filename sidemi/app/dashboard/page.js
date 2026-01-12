@@ -11,8 +11,15 @@ export default function DashboardPage() {
     const [user, setUser] = useState(null);
     const [role, setRole] = useState(null);
     const [stats, setStats] = useState(null);
+    const [studentSidang, setStudentSidang] = useState(null);
 
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    };
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -24,9 +31,52 @@ export default function DashboardPage() {
             setRole(userRole);
             if (userRole === 'ADMIN' || userRole === 'DOSEN') {
                 fetchStats();
+            } else if (userRole === 'MAHASISWA') {
+                fetchStudentData();
             }
         }
     }, []);
+
+    const fetchStudentData = async () => {
+        try {
+            // Check PKL status first
+            const pklRes = await api.get('/api/pkl/me');
+
+            // Handle Array response from API (take the first active or latest one)
+            const pklData = Array.isArray(pklRes.data) ? pklRes.data[0] : pklRes.data;
+
+            if (pklData) {
+                // Try to find sidang info in pkl object
+                let sidang = pklData.sidang;
+
+                // If not nested, try dedicated endpoint for current user
+                if (!sidang) {
+                    try {
+                        const sidRes = await api.get('/api/sidang/me');
+                        sidang = sidRes.data;
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+
+                // If still not found, try by pendaftaranId using the corrected ID
+                if (!sidang && pklData.id) {
+                    try {
+                        const sidRes = await api.get(`/api/sidang/schedule?pendaftaranId=${pklData.id}`);
+                        sidang = sidRes.data;
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+
+                if (sidang) {
+                    setStudentSidang(sidang);
+                }
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
     const fetchStats = async () => {
         try {
@@ -49,6 +99,35 @@ export default function DashboardPage() {
                         <CardHeader className="pb-2"><CardTitle className="text-sm">Logbook</CardTitle></CardHeader>
                         <CardContent><div className="text-2xl font-bold">Isi Harian</div><p className="text-xs text-muted-foreground">Jangan lupa isi logbook</p></CardContent>
                     </Card>
+
+                    <Card className={studentSidang ? "border-blue-200 bg-blue-50" : ""}>
+                        <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                            <CardTitle className="text-sm font-medium">Jadwal Sidang</CardTitle>
+                            <Calendar className="h-4 w-4 text-blue-500" />
+                        </CardHeader>
+                        <CardContent>
+                            {studentSidang ? (
+                                <div className="space-y-1">
+                                    <div className="text-lg font-bold text-blue-700">
+                                        {formatDate(studentSidang.tanggal)}
+                                    </div>
+                                    <div className="text-xs text-gray-600 flex items-center gap-1">
+                                        <Clock className="h-3 w-3" /> {studentSidang.sesi || '-'}
+                                        <span className="mx-1">|</span>
+                                        {studentSidang.ruang || '-'}
+                                    </div>
+                                    {studentSidang.dosenPenguji && (
+                                        <p className="text-xs text-gray-500 mt-1">Penguji: {studentSidang.dosenPenguji.nama}</p>
+                                    )}
+                                </div>
+                            ) : (
+                                <div>
+                                    <div className="text-2xl font-bold">-</div>
+                                    <p className="text-xs text-muted-foreground">Belum dijadwalkan</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
             )
         }
@@ -62,7 +141,7 @@ export default function DashboardPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{stats.periode ? stats.periode.nama : '-'}</div>
-                            <p className="text-xs text-muted-foreground">{stats.periode ? `${new Date(stats.periode.tanggalMulai).toLocaleDateString('id-ID')} - ${new Date(stats.periode.tanggalSelesai).toLocaleDateString('id-ID')}` : 'Tidak ada'}</p>
+                            <p className="text-xs text-muted-foreground">{stats.periode ? `${formatDate(stats.periode.tanggalMulai)} - ${formatDate(stats.periode.tanggalSelesai)}` : 'Tidak ada'}</p>
                         </CardContent>
                     </Card>
                     <Card>
@@ -101,7 +180,7 @@ export default function DashboardPage() {
                             <CardContent>
                                 <div className="text-2xl font-bold">{stats.periode ? stats.periode.nama : 'Tidak Ada'}</div>
                                 <p className="text-xs text-muted-foreground">
-                                    {stats.periode ? `${new Date(stats.periode.tanggalMulai).toLocaleDateString('id-ID')} - ${new Date(stats.periode.tanggalSelesai).toLocaleDateString('id-ID')}` : 'Buat periode baru'}
+                                    {stats.periode ? `${formatDate(stats.periode.tanggalMulai)} - ${formatDate(stats.periode.tanggalSelesai)}` : 'Buat periode baru'}
                                 </p>
                             </CardContent>
                         </Card>
@@ -132,6 +211,7 @@ export default function DashboardPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">{stats.breakdown.PKL2}</div>
+                                <p className="text-xs text-muted-foreground">Pembuatan Sistem Informasi</p>
                             </CardContent>
                         </Card>
                         <Card>

@@ -124,10 +124,16 @@ export default function AdminLaporanPage() {
         }
     }, [currentPage, filteredStudents.length, pageSize, searchQuery, filterTipe]); // Update dep array
 
+    const getLatestLaporan = (data) => {
+        if (!data) return null;
+        return Array.isArray(data) ? data[0] : data;
+    };
+
     const handleEdit = (student) => {
         setSelectedStudent(student);
+        const akhir = getLatestLaporan(student.stats?.laporanAkhir);
         setUploadForm({
-            fileUrl: student.stats?.laporanAkhir?.fileUrl || ''
+            fileUrl: akhir?.fileUrl || ''
         });
         setEditOpen(true);
     };
@@ -254,11 +260,18 @@ export default function AdminLaporanPage() {
                                         </TableCell>
                                         <TableCell className="text-center">
                                             {item.stats ? (
-                                                item.stats.laporanAkhir ? (
-                                                    <a href={item.stats.laporanAkhir.fileUrl || item.stats.laporanAkhir} target="_blank" rel="noreferrer" className="inline-flex items-center text-blue-600 hover:underline text-xs gap-1">
-                                                        <FileText className="h-3 w-3" /> Lihat
-                                                    </a>
-                                                ) : <span className="text-red-400 text-xs italic">Belum</span>
+                                                (() => {
+                                                    const akhir = getLatestLaporan(item.stats.laporanAkhir);
+                                                    if (akhir && akhir.fileUrl) {
+                                                        const url = akhir.fileUrl.startsWith('http') ? akhir.fileUrl : `https://${akhir.fileUrl}`;
+                                                        return (
+                                                            <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center text-blue-600 hover:underline text-xs gap-1">
+                                                                <FileText className="h-3 w-3" /> Lihat
+                                                            </a>
+                                                        );
+                                                    }
+                                                    return <span className="text-red-400 text-xs italic">Belum</span>;
+                                                })()
                                             ) : <span className="text-gray-300">...</span>}
                                         </TableCell>
                                         <TableCell className="text-right no-print">
@@ -268,7 +281,7 @@ export default function AdminLaporanPage() {
                                                 onClick={() => handleEdit(item)}
                                                 className={item.stats?.laporanAkhir ? "text-blue-600 hover:bg-blue-50" : "text-green-600 hover:bg-green-50"}
                                             >
-                                                {item.stats?.laporanAkhir ? <><Edit className="h-4 w-4 mr-1" /> Edit</> : <><PlusCircle className="h-4 w-4 mr-1" /> Upload</>}
+                                                {getLatestLaporan(item.stats?.laporanAkhir) ? <><Edit className="h-4 w-4 mr-1" /> Edit</> : <><PlusCircle className="h-4 w-4 mr-1" /> Upload</>}
                                             </Button>
                                         </TableCell>
                                     </TableRow>

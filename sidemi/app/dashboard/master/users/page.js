@@ -11,14 +11,16 @@ import { Pagination } from '@/components/ui/pagination';
 
 export default function MasterUsersPage() {
     const [users, setUsers] = useState([]);
-    const [prodiList, setProdiList] = useState([]); // [NEW]
+    const [prodiList, setProdiList] = useState([]);
     const [loading, setLoading] = useState(false);
     const [form, setForm] = useState({ username: '', password: '', role: 'MAHASISWA' });
     const [profile, setProfile] = useState({ nama: '', nim: '', nidn: '', kelas: '', angkatan: '', prodiId: '' });
     const [editingId, setEditingId] = useState(null);
-    const [searchQuery, setSearchQuery] = useState(''); // [NEW]
+
+    // Pagination & Search State
+    const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+    const [itemsPerPage, setItemsPerPage] = useState("10");
 
     const [isImporting, setIsImporting] = useState(false);
 
@@ -30,7 +32,7 @@ export default function MasterUsersPage() {
         try {
             const [resUsers, resProdi] = await Promise.all([
                 api.get('/api/users'),
-                api.get('/api/prodi').catch(() => ({ data: [] })) // Handle if endpoint not ready
+                api.get('/api/prodi').catch(() => ({ data: [] }))
             ]);
             setUsers(resUsers.data);
             setProdiList(resProdi.data);
@@ -225,8 +227,21 @@ export default function MasterUsersPage() {
         return username.includes(query) || profileName.toLowerCase().includes(query);
     });
 
-    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-    const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    // Pagination Logic
+    const totalItems = filteredUsers.length;
+    const totalPages = itemsPerPage === 'all' ? 1 : Math.ceil(totalItems / parseInt(itemsPerPage));
+
+    const paginatedUsers = itemsPerPage === 'all'
+        ? filteredUsers
+        : filteredUsers.slice(
+            (currentPage - 1) * parseInt(itemsPerPage),
+            currentPage * parseInt(itemsPerPage)
+        );
+
+    // Reset page when search or itemsPerPage changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, itemsPerPage]);
 
     return (
         <div className="space-y-6">
@@ -309,19 +324,30 @@ export default function MasterUsersPage() {
                 </CardContent>
             </Card>
 
-            <div className="flex justify-between items-center bg-white p-4 rounded-md border gap-4">
-                <div className="relative w-full max-w-sm">
+            <div className="flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-md border gap-4">
+                <div className="flex items-center gap-2 flex-1 w-full relative">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                     <Input
                         type="search"
                         placeholder="Search by username or name..."
-                        className="pl-9"
+                        className="pl-9 w-full md:max-w-sm"
                         value={searchQuery}
-                        onChange={(e) => {
-                            setSearchQuery(e.target.value);
-                            setCurrentPage(1); // Reset page on search
-                        }}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                     />
+                    <Select
+                        value={itemsPerPage}
+                        onValueChange={(value) => setItemsPerPage(value)}
+                    >
+                        <SelectTrigger className="w-[130px]">
+                            <SelectValue placeholder="Show" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="5">5 Baris</SelectItem>
+                            <SelectItem value="10">10 Baris</SelectItem>
+                            <SelectItem value="25">25 Baris</SelectItem>
+                            <SelectItem value="all">Semua</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={handleDownloadTemplate} title="Download Template CSV">
@@ -350,6 +376,7 @@ export default function MasterUsersPage() {
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b bg-gray-50 text-left">
+                            <th className="p-4 font-medium">No</th>
                             <th className="p-4 font-medium">Username</th>
                             <th className="p-4 font-medium">Role</th>
                             <th className="p-4 font-medium">Nama (Profile)</th>
@@ -358,32 +385,43 @@ export default function MasterUsersPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {paginatedUsers.map(u => (
-                            <tr key={u.id} className="border-b last:border-0 hover:bg-gray-50">
-                                <td className="p-4">{u.username}</td>
-                                <td className="p-4"><span className="bg-gray-100 px-2 py-1 rounded text-xs font-bold">{u.role}</span></td>
-                                <td className="p-4">
-                                    {u.role === 'MAHASISWA' ? u.mahasiswa?.nama :
-                                        u.role === 'DOSEN' ? u.dosen?.nama :
-                                            u.role === 'INSTANSI' ? u.instansi?.nama : '-'}
-                                    {u.role === 'MAHASISWA' && u.mahasiswa?.prodi && (
-                                        <div className="text-xs text-gray-500">{u.mahasiswa.prodi.nama}</div>
-                                    )}
-                                </td>
-                                <td className="p-4">
-                                    {u.role === 'MAHASISWA' ? u.mahasiswa?.nim :
-                                        u.role === 'DOSEN' ? u.dosen?.nidn : '-'}
-                                </td>
-                                <td className="p-4 text-right">
-                                    <Button size="sm" variant="ghost" className="text-blue-500 mr-1" onClick={() => handleEdit(u)}>
-                                        <Pencil className="h-4 w-4" />
-                                    </Button>
-                                    <Button size="sm" variant="ghost" className="text-red-500" onClick={() => handleDelete(u.id)}>
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </td>
+                        {paginatedUsers.length > 0 ? (
+                            paginatedUsers.map((u, index) => (
+                                <tr key={u.id} className="border-b last:border-0 hover:bg-gray-50">
+                                    <td className="p-4">
+                                        {itemsPerPage === 'all'
+                                            ? index + 1
+                                            : (currentPage - 1) * parseInt(itemsPerPage) + index + 1}
+                                    </td>
+                                    <td className="p-4">{u.username}</td>
+                                    <td className="p-4"><span className="bg-gray-100 px-2 py-1 rounded text-xs font-bold">{u.role}</span></td>
+                                    <td className="p-4">
+                                        {u.role === 'MAHASISWA' ? u.mahasiswa?.nama :
+                                            u.role === 'DOSEN' ? u.dosen?.nama :
+                                                u.role === 'INSTANSI' ? u.instansi?.nama : '-'}
+                                        {u.role === 'MAHASISWA' && u.mahasiswa?.prodi && (
+                                            <div className="text-xs text-gray-500">{u.mahasiswa.prodi.nama}</div>
+                                        )}
+                                    </td>
+                                    <td className="p-4">
+                                        {u.role === 'MAHASISWA' ? u.mahasiswa?.nim :
+                                            u.role === 'DOSEN' ? u.dosen?.nidn : '-'}
+                                    </td>
+                                    <td className="p-4 text-right">
+                                        <Button size="sm" variant="ghost" className="text-blue-500 mr-1" onClick={() => handleEdit(u)}>
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                        <Button size="sm" variant="ghost" className="text-red-500" onClick={() => handleDelete(u.id)}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={6} className="text-center p-4">Tidak ada data</td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
             </div>
