@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Trash2, Building2, Edit } from 'lucide-react';
+import { Trash2, Edit } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import api from '@/lib/api';
 
 export default function MasterInstansiPage() {
@@ -137,40 +138,66 @@ export default function MasterInstansiPage() {
                 </CardContent>
             </Card>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {instansis.map(item => (
-                    <Card key={item.id}>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-lg font-medium">{item.nama}</CardTitle>
-                            <Building2 className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-sm space-y-2 mb-4">
-                                <p className="text-gray-600">{item.alamat || 'Alamat belum diisi'}</p>
-                                <p className="text-gray-500">{item.kontak || '-'}</p>
-                            </div>
-                            <div className="flex gap-2">
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="w-full"
-                                    onClick={() => handleEdit(item)}
-                                >
-                                    <Edit className="h-4 w-4 mr-2" /> Edit
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    className="w-full"
-                                    onClick={() => handleDelete(item.id)}
-                                >
-                                    <Trash2 className="h-4 w-4 mr-2" /> Hapus
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Data Instansi</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="rounded-md border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[50px]">No</TableHead>
+                                    <TableHead>Nama Instansi</TableHead>
+                                    <TableHead>Alamat</TableHead>
+                                    <TableHead>Kontak</TableHead>
+                                    <TableHead>Pimpinan</TableHead>
+                                    <TableHead className="text-right">Aksi</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {instansis.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+                                            Belum ada data instansi
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    instansis.map((item, index) => (
+                                        <TableRow key={item.id}>
+                                            <TableCell>{index + 1}</TableCell>
+                                            <TableCell className="font-medium">{item.nama}</TableCell>
+                                            <TableCell className="max-w-[300px] truncate" title={item.alamat}>
+                                                {item.alamat || '-'}
+                                            </TableCell>
+                                            <TableCell>{item.kontak || '-'}</TableCell>
+                                            <TableCell>{item.pimpinan || '-'}</TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        onClick={() => handleEdit(item)}
+                                                    >
+                                                        <Edit className="h-4 w-4 text-blue-500" />
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        onClick={() => handleDelete(item.id)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 text-red-500" />
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }

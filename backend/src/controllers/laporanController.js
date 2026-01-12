@@ -64,13 +64,23 @@ exports.updateFeedbackHarian = async (req, res) => {
 };
 
 // Tengah
+// Tengah
 exports.submitTengah = async (req, res) => {
     try {
         const { pendaftaranId, fileUrl } = req.body;
-        const laporan = await LaporanTengah.create({
-            pendaftaranId, fileUrl, status: 'SUBMITTED'
-        });
-        res.status(201).send(laporan);
+        // Check if exists
+        let laporan = await LaporanTengah.findOne({ where: { pendaftaranId } });
+
+        if (laporan) {
+            laporan.fileUrl = fileUrl;
+            laporan.status = 'SUBMITTED'; // Re-submit resets status if needed, or keeps it. 
+            await laporan.save();
+        } else {
+            laporan = await LaporanTengah.create({
+                pendaftaranId, fileUrl, status: 'SUBMITTED'
+            });
+        }
+        res.status(200).send(laporan);
     } catch (err) {
         res.status(500).send({ message: err.message });
     }
@@ -80,10 +90,19 @@ exports.submitTengah = async (req, res) => {
 exports.submitAkhir = async (req, res) => {
     try {
         const { pendaftaranId, fileUrl } = req.body;
-        const laporan = await LaporanAkhir.create({
-            pendaftaranId, fileUrl, status: 'SUBMITTED'
-        });
-        res.status(201).send(laporan);
+        // Check if exists
+        let laporan = await LaporanAkhir.findOne({ where: { pendaftaranId } });
+
+        if (laporan) {
+            laporan.fileUrl = fileUrl;
+            laporan.status = 'SUBMITTED';
+            await laporan.save();
+        } else {
+            laporan = await LaporanAkhir.create({
+                pendaftaranId, fileUrl, status: 'SUBMITTED'
+            });
+        }
+        res.status(200).send(laporan);
     } catch (err) {
         res.status(500).send({ message: err.message });
     }
