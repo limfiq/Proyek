@@ -20,7 +20,8 @@ module.exports = (sequelize, DataTypes) => {
         tanggal: DataTypes.DATE,
         ruang: DataTypes.STRING,
         sesi: DataTypes.STRING,
-        nilaiAkhir: DataTypes.FLOAT
+        nilaiAkhir: DataTypes.FLOAT,
+        revisiPenguji: DataTypes.TEXT
     }, {
         sequelize,
         modelName: 'Sidang',

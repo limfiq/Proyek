@@ -29,6 +29,15 @@ export default function PendaftaranPage() {
         checkStatus();
     }, []);
 
+    const loadInstansi = async () => {
+        try {
+            const res = await api.get('/api/instansi');
+            setInstansiList(res.data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     const checkStatus = async () => {
         try {
             const res = await api.get('/api/pkl/me');
@@ -41,16 +50,8 @@ export default function PendaftaranPage() {
             }
 
             // Fetch user profile to determine Prodi
-            const userRes = await api.get('/api/auth/me').catch(() => null) || await api.get('/api/users/me').catch(() => null);
-            // Verify path. api/auth/me is common, or api/users/me. I'll use a safe pattern or try one.
-            // Based on previous files, there wasn't a clear "auth/me".
-            // But let's assume /api/users/me works or I add it?
-            // Wait, I can't change backend. I have to hope there is an endpoint.
-            // Actually, `SidangPage` used `api.get('/api/pkl/ujian')`.
-            // `Sidebar.js` uses `localStorage.getItem('role')`. 
-            // It seems I might rely on LocalStorage, but profile info like Prodi isn't there.
-            // I'll assume `/api/users/me` exists or `api/auth/me`. 
-            // Let's try `api.get('/api/auth/me')` as it's a standard convention.
+            // Fetch user profile to determine Prodi
+            const userRes = await api.get('/auth/me');
 
             if (userRes && userRes.data && userRes.data.mahasiswa && userRes.data.mahasiswa.prodi) {
                 const jenjang = userRes.data.mahasiswa.prodi.jenjang;
@@ -203,9 +204,11 @@ export default function PendaftaranPage() {
                                 )}
                             </div>
 
-                            {formData.tipe === 'PKL2' && (
+                            {(formData.tipe === 'PKL2' || formData.tipe === 'MBKM') && (
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">Judul Project (Rencana)</label>
+                                    <label className="text-sm font-medium">
+                                        {formData.tipe === 'MBKM' ? 'Link MBKM / Nama Program' : 'Judul Project (Rencana)'}
+                                    </label>
                                     <Input
                                         placeholder="Contoh: Sistem Informasi Inventory Gudang"
                                         value={formData.judulProject}

@@ -11,6 +11,7 @@ export function GradingForm({ pendaftaranId, role, onClose, type, gradingRole })
     const [loading, setLoading] = useState(false);
     const [kriteriaList, setKriteriaList] = useState([]);
     const [scores, setScores] = useState({}); // { [kriteriaId]: value }
+    const [revisi, setRevisi] = useState('');
 
     // Map role to grading type or use provided type
     let userRole = gradingRole || '';
@@ -29,6 +30,9 @@ export function GradingForm({ pendaftaranId, role, onClose, type, gradingRole })
             const res = await api.get(`/api/nilai/${pendaftaranId}`);
             if (res.data.detailed) {
                 setScores(res.data.detailed);
+            }
+            if (res.data.revisi) {
+                setRevisi(res.data.revisi);
             }
         } catch (err) {
             console.error("Failed to load existing grades", err);
@@ -56,7 +60,8 @@ export function GradingForm({ pendaftaranId, role, onClose, type, gradingRole })
         try {
             await api.post('/api/nilai/batch', {
                 pendaftaranId,
-                scores: scores
+                scores: scores,
+                revisi
             });
             alert('Nilai tersimpan!');
             onClose();
@@ -98,12 +103,26 @@ export function GradingForm({ pendaftaranId, role, onClose, type, gradingRole })
                         ))
                     )}
 
+
+                    {userRole === 'PENGUJI' && (
+                        <div className="space-y-1 pt-2 border-t">
+                            <Label htmlFor="revisi">Revisi / Catatan Penguji</Label>
+                            <textarea
+                                id="revisi"
+                                className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                placeholder="Masukkan catatan revisi jika ada..."
+                                value={revisi}
+                                onChange={e => setRevisi(e.target.value)}
+                            />
+                        </div>
+                    )}
+
                     <div className="flex gap-2 pt-4">
                         <Button type="button" variant="ghost" onClick={onClose} className="w-full">Batal</Button>
                         <Button type="submit" className="w-full" disabled={loading || kriteriaList.length === 0}>Simpan</Button>
                     </div>
                 </form>
             </CardContent>
-        </Card>
+        </Card >
     );
 }

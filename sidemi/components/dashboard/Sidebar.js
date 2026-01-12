@@ -23,28 +23,6 @@ export function Sidebar() {
         setRole(localStorage.getItem('role'));
     }, []);
 
-    const links = [
-        { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['MAHASISWA', 'DOSEN', 'INSTANSI', 'ADMIN'] },
-        // Mahasiswa
-        { href: '/dashboard/pendaftaran', label: 'Pendaftaran', icon: FileText, roles: ['MAHASISWA'] },
-        { href: '/dashboard/laporan', label: 'Laporan', icon: BookOpen, roles: ['MAHASISWA'] },
-        // Dosen
-        { href: '/dashboard/bimbingan', label: 'Bimbingan', icon: Users, roles: ['DOSEN'] },
-        { href: '/dashboard/sidang', label: 'Sidang', icon: GraduationCap, roles: ['DOSEN'] },
-        // Instansi
-        { href: '/dashboard/peserta', label: 'Peserta PKL', icon: Users, roles: ['INSTANSI'] },
-        // Admin
-        { href: '/dashboard/master/periode', label: 'Periode', icon: Calendar, roles: ['ADMIN'] },
-        { href: '/dashboard/master/prodi', label: 'Data Prodi', icon: GraduationCap, roles: ['ADMIN'] },
-        { href: '/dashboard/master/instansi', label: 'Data Instansi', icon: Building2, roles: ['ADMIN'] },
-        { href: '/dashboard/master/users', label: 'Users', icon: Users, roles: ['ADMIN'] },
-        { href: '/dashboard/master/kriteria', label: 'Kriteria Nilai', icon: Award, roles: ['ADMIN'] },
-        { href: '/dashboard/admin/validasi', label: 'Pendaftaran Magang', icon: FileText, roles: ['ADMIN'] },
-        { href: '/dashboard/admin/sidang', label: 'Jadwal Sidang', icon: Calendar, roles: ['ADMIN'] },
-        { href: '/dashboard/admin/rekap', label: 'Rekap Nilai', icon: BookOpen, roles: ['ADMIN'] },
-        { href: '/dashboard/admin/laporan', label: 'Rekap Laporan', icon: BookOpen, roles: ['ADMIN'] },
-    ];
-
     if (!role) return null;
 
     return (
@@ -61,7 +39,7 @@ export function Sidebar() {
             </div>
 
             <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-                {links.filter(link => link.roles.includes(role)).map((link) => {
+                {sidebarLinks.filter(link => link.roles.includes(role)).map((link) => {
                     const Icon = link.icon;
                     const isActive = pathname === link.href;
                     return (
@@ -107,3 +85,25 @@ export function Sidebar() {
         </div>
     );
 }
+
+export const sidebarLinks = [
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['MAHASISWA', 'DOSEN', 'INSTANSI', 'ADMIN'] },
+    // Mahasiswa
+    { href: '/dashboard/pendaftaran', label: 'Pendaftaran', icon: FileText, roles: ['MAHASISWA'] },
+    { href: '/dashboard/laporan', label: 'Laporan', icon: BookOpen, roles: ['MAHASISWA'] },
+    // Dosen
+    { href: '/dashboard/bimbingan', label: 'Bimbingan', icon: Users, roles: ['DOSEN'] },
+    { href: '/dashboard/sidang', label: 'Sidang', icon: GraduationCap, roles: ['DOSEN'] },
+    // Instansi
+    { href: '/dashboard/peserta', label: 'Peserta PKL', icon: Users, roles: ['INSTANSI'] },
+    // Admin
+    { href: '/dashboard/master/periode', label: 'Periode', icon: Calendar, roles: ['ADMIN'] },
+    { href: '/dashboard/master/prodi', label: 'Data Prodi', icon: GraduationCap, roles: ['ADMIN'] },
+    { href: '/dashboard/master/instansi', label: 'Data Instansi', icon: Building2, roles: ['ADMIN'] },
+    { href: '/dashboard/master/users', label: 'Users', icon: Users, roles: ['ADMIN'] },
+    { href: '/dashboard/master/kriteria', label: 'Kriteria Nilai', icon: Award, roles: ['ADMIN'] },
+    { href: '/dashboard/admin/validasi', label: 'Pendaftaran Magang', icon: FileText, roles: ['ADMIN'] },
+    { href: '/dashboard/admin/sidang', label: 'Jadwal Sidang', icon: Calendar, roles: ['ADMIN'] },
+    { href: '/dashboard/admin/rekap', label: 'Rekap Nilai', icon: BookOpen, roles: ['ADMIN'] },
+    { href: '/dashboard/admin/laporan', label: 'Rekap Laporan', icon: BookOpen, roles: ['ADMIN'] },
+];

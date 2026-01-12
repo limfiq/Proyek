@@ -58,11 +58,15 @@ exports.getSummary = async (req, res) => {
             finalScore = (scores.HARIAN * 0.3) + (scores.PEMBIMBING * 0.3) + (scores.PENGUJI * 0.25) + (scores.INSTANSI * 0.15);
         }
 
+        // Fetch revision if exists in Sidang
+        const sidang = await Sidang.findOne({ where: { pendaftaranId } });
+
         res.send({
             details: scores,
             detailed, // Add detailed structure
             finalScore: finalScore.toFixed(2),
-            tipe: pendaftaran.tipe
+            tipe: pendaftaran.tipe,
+            revisi: sidang ? sidang.revisiPenguji : ''
         });
     } catch (err) {
         res.status(500).send({ message: err.message });
@@ -257,9 +261,23 @@ exports.adminInputNilai = async (req, res) => {
 
 exports.batchInputNilai = async (req, res) => {
     try {
-        const { pendaftaranId, scores } = req.body;
+        const { pendaftaranId, scores, revisi } = req.body;
         // In future: Check if req.userId is allowed to grade this pendaftaran
         await processScoreInput(pendaftaranId, scores);
+
+        if (revisi !== undefined) {
+            // Find Sidang for this pendaftaran
+            const sidang = await Sidang.findOne({ where: { pendaftaranId } });
+            if (sidang) {
+                sidang.revisiPenguji = revisi;
+                await sidang.save();
+            } else {
+                // Optimization: if no sidang exists but we have revisi, maybe create one? 
+                // Or just ignore for now as Sidang usually pre-exists for scheduling.
+                // Let's create if not exists or just ignore? Best to ignore if not found as it implies not scheduled.
+            }
+        }
+
         res.send({ message: 'Nilai batch updated successfully' });
     } catch (err) {
         console.error(err);

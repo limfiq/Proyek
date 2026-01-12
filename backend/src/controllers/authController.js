@@ -95,3 +95,34 @@ exports.changePassword = async (req, res) => {
         res.status(500).send({ message: err.message });
     }
 };
+
+exports.me = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const user = await User.findByPk(userId);
+        if (!user) return res.status(404).send({ message: 'User not found' });
+
+        let detail = null;
+        if (user.role === 'MAHASISWA') {
+            detail = await Mahasiswa.findOne({
+                where: { userId: user.id },
+                include: [{ model: db.Prodi, as: 'prodi' }]
+            });
+        }
+        if (user.role === 'DOSEN') {
+            detail = await Dosen.findOne({ where: { userId: user.id } });
+        }
+        if (user.role === 'INSTANSI') {
+            detail = await Instansi.findOne({ where: { userId: user.id } });
+        }
+
+        res.status(200).json({
+            id: user.id,
+            username: user.username,
+            role: user.role,
+            [user.role.toLowerCase()]: detail
+        });
+    } catch (err) {
+        res.status(500).send({ message: err.message });
+    }
+};
