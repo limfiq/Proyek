@@ -225,24 +225,27 @@ const processScoreInput = async (pendaftaranId, scores) => {
         if (isNaN(val)) continue;
 
         if (key === 'HARIAN' || key === 'LOGBOOK' || key === 'MONEV') {
-            const existing = await KomponenNilai.findOne({ where: { pendaftaranId, jenis: key } });
-            if (existing) {
-                existing.nilai = val;
-                await existing.save();
-            } else {
+            const [updatedCount] = await KomponenNilai.update(
+                { nilai: val },
+                { where: { pendaftaranId, jenis: key } }
+            );
+
+            if (updatedCount === 0) {
                 await KomponenNilai.create({ pendaftaranId, jenis: key, nilai: val });
             }
         } else {
             // It's a Kriteria ID
             const kriteriaId = parseInt(key);
+            if (isNaN(kriteriaId)) continue; // Safety check
+
             const kriteria = await KriteriaNilai.findByPk(kriteriaId);
             if (kriteria) {
-                const existing = await KomponenNilai.findOne({ where: { pendaftaranId, kriteriaNilaiId: kriteriaId } });
-                if (existing) {
-                    existing.nilai = val;
-                    existing.jenis = kriteria.role;
-                    await existing.save();
-                } else {
+                const [updatedCount] = await KomponenNilai.update(
+                    { nilai: val, jenis: kriteria.role }, // Ensure jenis is synced
+                    { where: { pendaftaranId, kriteriaNilaiId: kriteriaId } }
+                );
+
+                if (updatedCount === 0) {
                     await KomponenNilai.create({
                         pendaftaranId,
                         kriteriaNilaiId: kriteriaId,
