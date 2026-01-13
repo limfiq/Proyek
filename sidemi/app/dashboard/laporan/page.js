@@ -15,7 +15,7 @@ export default function LaporanPage() {
     const [pendaftaran, setPendaftaran] = useState(null);
     const [formHarian, setFormHarian] = useState({ tanggal: '', kegiatan: '' });
     const [formTengah, setFormTengah] = useState({ fileUrl: '' });
-    const [formAkhir, setFormAkhir] = useState({ fileUrl: '' });
+    const [formAkhir, setFormAkhir] = useState({ fileUrl: '', finalUrl: '' });
     const [mingguanList, setMingguanList] = useState([]);
     const [formMingguan, setFormMingguan] = useState({ mingguKe: '', fileUrl: '' });
     const [loading, setLoading] = useState(false);
@@ -375,6 +375,18 @@ export default function LaporanPage() {
                                             value={formAkhir.fileUrl}
                                             onChange={(e) => setFormAkhir({ ...formAkhir, fileUrl: e.target.value })}
                                             required
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Link Laporan Final (Setelah Sidang)</label>
+                                    <div className="relative">
+                                        <Upload className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                        <Input
+                                            placeholder="https://docs.google.com/..."
+                                            className="pl-10"
+                                            value={formAkhir.finalUrl}
+                                            onChange={(e) => setFormAkhir({ ...formAkhir, finalUrl: e.target.value })}
                                         />
                                     </div>
                                 </div>

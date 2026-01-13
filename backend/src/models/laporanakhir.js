@@ -24,6 +24,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: true
         },
+        finalUrl: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
         status: {
             type: DataTypes.ENUM('SUBMITTED', 'APPROVED', 'REJECTED'),
             defaultValue: 'SUBMITTED'

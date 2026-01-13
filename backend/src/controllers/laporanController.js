@@ -89,7 +89,7 @@ exports.submitTengah = async (req, res) => {
 // Akhir
 exports.submitAkhir = async (req, res) => {
     try {
-        const { pendaftaranId, fileUrl, type_iku, ikuUrl } = req.body;
+        const { pendaftaranId, fileUrl, type_iku, ikuUrl, finalUrl } = req.body;
         // Check if exists
         let laporan = await LaporanAkhir.findOne({ where: { pendaftaranId } });
 
@@ -97,11 +97,12 @@ exports.submitAkhir = async (req, res) => {
             laporan.fileUrl = fileUrl;
             if (type_iku) laporan.type_iku = type_iku;
             if (ikuUrl) laporan.ikuUrl = ikuUrl;
+            if (finalUrl) laporan.finalUrl = finalUrl;
             laporan.status = 'SUBMITTED';
             await laporan.save();
         } else {
             laporan = await LaporanAkhir.create({
-                pendaftaranId, fileUrl, type_iku, ikuUrl, status: 'SUBMITTED'
+                pendaftaranId, fileUrl, type_iku, ikuUrl, finalUrl, status: 'SUBMITTED'
             });
         }
         res.status(200).send(laporan);

@@ -344,23 +344,6 @@ export default function AdminLaporanPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold">Jenis IKU / IKT</label>
-                            <Select
-                                value={uploadForm.type_iku}
-                                onValueChange={(val) => setUploadForm({ ...uploadForm, type_iku: val })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Pilih Jenis IKU/IKT" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="IKU 6">IKU 6</SelectItem>
-                                    <SelectItem value="IKT 1">IKT 1</SelectItem>
-                                    <SelectItem value="IKT 2">IKT 2</SelectItem>
-                                    <SelectItem value="IKT 3">IKT 3</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
                             <label className="text-sm font-semibold">Link Bukti IKU/IKT (Google Drive)</label>
                             <Input
                                 placeholder="https://..."
