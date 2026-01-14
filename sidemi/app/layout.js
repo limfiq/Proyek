@@ -12,8 +12,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Sidemi",
-  description: "Sistem Informasi Magang Mahasiswa",
+  title: "SiMagang Pintar",
+  description: "Sistem Informasi Magang Mahasiswa STIKOM PGRI Banyuwangi",
 };
 
 export default function RootLayout({ children }) {
