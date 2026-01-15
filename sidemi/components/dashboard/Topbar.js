@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, Bell, Menu, LayoutDashboard } from 'lucide-react';
+import { Search, Bell, Menu, LayoutDashboard, User, LogOut, KeyRound, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -9,6 +9,14 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function Topbar() {
     const pathname = usePathname();
@@ -35,7 +43,7 @@ export function Topbar() {
                             <h1 className="text-2xl font-bold tracking-wider">SID3MI</h1>
                         </div>
                         <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-                            {role && sidebarLinks.filter(link => link.roles.includes(role)).map((link) => {
+                            {role && sidebarLinks.filter(link => link.roles.includes(role?.toUpperCase())).map((link) => {
                                 const Icon = link.icon;
                                 const isActive = pathname === link.href;
                                 return (
@@ -70,7 +78,42 @@ export function Topbar() {
                     <Bell className="h-5 w-5" />
                     <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full animate-pulse" />
                 </Button>
-                <div className="h-8 w-8 rounded-full bg-primary/10 border border-primary/20" />
+
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="relative h-10 w-10 rounded-full bg-primary/10 border border-primary/20 p-0 hover:bg-primary/20 transition-colors">
+                            <span className="text-primary font-bold text-lg">{role ? role[0] : 'U'}</span>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="end" forceMount>
+                        <DropdownMenuLabel className="font-normal">
+                            <div className="flex flex-col space-y-1">
+                                <p className="text-sm font-medium leading-none">User Account</p>
+                                <p className="text-xs leading-none text-muted-foreground">
+                                    {role}
+                                </p>
+                            </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                            <Link href="/dashboard/profile" className="cursor-pointer">
+                                <KeyRound className="mr-2 h-4 w-4" />
+                                <span>Ganti Password</span>
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                            className="text-red-600 focus:text-red-600 cursor-pointer"
+                            onClick={() => {
+                                localStorage.clear();
+                                window.location.href = '/login';
+                            }}
+                        >
+                            <LogOut className="mr-2 h-4 w-4" />
+                            <span>Log out</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         </header>
     );

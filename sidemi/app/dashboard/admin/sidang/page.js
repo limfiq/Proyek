@@ -21,6 +21,7 @@ import api from '@/lib/api';
 import { Plus, Calendar, User, UserCheck, Printer, Check, ChevronsUpDown, Download, FileSpreadsheet, Search } from 'lucide-react';
 import { cn } from "@/lib/utils"
 import { Pagination } from '@/components/ui/pagination';
+import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 import {
     Select,
     SelectContent,
@@ -255,6 +256,43 @@ export default function AdminSidangPage() {
         ? filteredPendaftarans
         : filteredPendaftarans.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
+    const handleExportExcel = () => {
+        const data = pendaftarans.map((r, index) => {
+            const sidang = getSidangInfo(r.id);
+            return {
+                No: index + 1,
+                Mahasiswa: r.mahasiswa?.nama,
+                NIM: r.mahasiswa?.nim,
+                Instansi: r.instansi?.nama,
+                Pembimbing: r.pembimbing?.nama || '-',
+                Penguji: sidang?.penguji?.nama || '-',
+                Tanggal: sidang?.tanggal ? new Date(sidang.tanggal).toLocaleDateString('id-ID') : '-',
+                Ruang: sidang?.ruang || '-',
+                Sesi: sidang?.sesi || '-'
+            };
+        });
+        exportToExcel(data, 'Jadwal_Sidang_PKL');
+    };
+
+    const handleExportPDF = () => {
+        const columns = ['No', 'Mahasiswa', 'NIM', 'Instansi', 'Pembimbing', 'Penguji', 'Tanggal', 'Ruang', 'Sesi'];
+        const data = pendaftarans.map((r, index) => {
+            const sidang = getSidangInfo(r.id);
+            return [
+                index + 1,
+                r.mahasiswa?.nama,
+                r.mahasiswa?.nim,
+                r.instansi?.nama,
+                r.pembimbing?.nama || '-',
+                sidang?.penguji?.nama || '-',
+                sidang?.tanggal ? new Date(sidang.tanggal).toLocaleDateString('id-ID') : '-',
+                sidang?.ruang || '-',
+                sidang?.sesi || '-'
+            ];
+        });
+        exportToPDF('Jadwal Sidang PKL', columns, data, 'Jadwal_Sidang_PKL', 'landscape');
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center no-print">
@@ -264,6 +302,8 @@ export default function AdminSidangPage() {
                         <Download className="h-4 w-4 mr-2" />
                         Template
                     </Button>
+                    <Button variant="outline" size="sm" onClick={handleExportExcel}>XLS</Button>
+                    <Button variant="outline" size="sm" onClick={handleExportPDF}>PDF</Button>
                     <label htmlFor="csv-upload" className="cursor-pointer">
                         <Button variant="outline" size="sm" className="hidden md:flex gap-2" asChild disabled={isImporting}>
                             <span>

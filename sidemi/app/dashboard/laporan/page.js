@@ -20,6 +20,8 @@ export default function LaporanPage() {
     const [formMingguan, setFormMingguan] = useState({ mingguKe: '', fileUrl: '' });
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
+    const [laporanTengah, setLaporanTengah] = useState(null);
+    const [laporanAkhir, setLaporanAkhir] = useState(null);
 
     const [harianPage, setHarianPage] = useState(1);
     const [mingguanPage, setMingguanPage] = useState(1);
@@ -39,6 +41,8 @@ export default function LaporanPage() {
                 if (active) {
                     loadHarian(active.id);
                     loadMingguan(active.id);
+                    loadTengah(active.id);
+                    loadAkhir(active.id);
                 }
             }
         } catch (err) {
@@ -59,6 +63,24 @@ export default function LaporanPage() {
         try {
             const res = await api.get(`/api/laporan/mingguan?pendaftaranId=${id}`);
             setMingguanList(res.data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const loadTengah = async (id) => {
+        try {
+            const res = await api.get(`/api/laporan/tengah?pendaftaranId=${id}`);
+            if (res.data) setLaporanTengah(res.data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const loadAkhir = async (id) => {
+        try {
+            const res = await api.get(`/api/laporan/akhir?pendaftaranId=${id}`);
+            if (res.data) setLaporanAkhir(res.data);
         } catch (err) {
             console.error(err);
         }
@@ -93,6 +115,7 @@ export default function LaporanPage() {
                 ...formTengah
             });
             setMessage('Laporan tengah disubmit!');
+            loadTengah(pendaftaran.id);
         } catch (err) {
             alert(err.message);
         } finally {
@@ -110,6 +133,7 @@ export default function LaporanPage() {
                 ...formAkhir
             });
             setMessage('Laporan akhir disubmit!');
+            loadAkhir(pendaftaran.id);
         } catch (err) {
             alert(err.message);
         } finally {
@@ -331,73 +355,134 @@ export default function LaporanPage() {
                         </div>
                     </div>
                 ) : activeTab === 'tengah' ? (
-                    <Card className="max-w-md mx-auto">
-                        <CardHeader>
-                            <CardTitle>Upload Laporan Tengah (50%)</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {message && <p className="text-green-600 mb-2 text-sm">{message}</p>}
-                            <form onSubmit={handleSubmitTengah} className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Link Google Drive / Dokumen</label>
-                                    <div className="relative">
-                                        <Upload className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                        <Input
-                                            placeholder="https://docs.google.com/..."
-                                            className="pl-10"
-                                            value={formTengah.fileUrl}
-                                            onChange={(e) => setFormTengah({ ...formTengah, fileUrl: e.target.value })}
-                                            required
-                                        />
+                    <>
+                        <Card className="max-w-md mx-auto">
+                            <CardHeader>
+                                <CardTitle>Upload Laporan Tengah (50%)</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {message && <p className="text-green-600 mb-2 text-sm">{message}</p>}
+                                <form onSubmit={handleSubmitTengah} className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Link Google Drive / Dokumen</label>
+                                        <div className="relative">
+                                            <Upload className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                            <Input
+                                                placeholder="https://docs.google.com/..."
+                                                className="pl-10"
+                                                value={formTengah.fileUrl}
+                                                onChange={(e) => setFormTengah({ ...formTengah, fileUrl: e.target.value })}
+                                                required
+                                            />
+                                        </div>
                                     </div>
-                                </div>
-                                <Button type="submit" className="w-full" disabled={loading}>
-                                    Submit Laporan
-                                </Button>
-                            </form>
-                        </CardContent>
-                    </Card>
+                                    <Button type="submit" className="w-full" disabled={loading}>
+                                        Submit Laporan
+                                    </Button>
+                                </form>
+                            </CardContent>
+                        </Card>
+                        <div className="mt-6">
+                            {laporanTengah && (
+                                <Card className="max-w-md mx-auto bg-blue-50 border-blue-100">
+                                    <CardContent className="pt-6">
+                                        <h3 className="font-semibold text-blue-900 mb-2">Laporan Submitted</h3>
+                                        <div className="space-y-2 text-sm">
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-600">Status:</span>
+                                                <span className="font-medium">{laporanTengah.status}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-600">File:</span>
+                                                <a href={laporanTengah.fileUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+                                                    Buka Link
+                                                </a>
+                                            </div>
+                                            <div className="text-xs text-gray-500 pt-2 text-right">
+                                                Last updated: {new Date(laporanTengah.updatedAt).toLocaleDateString()}
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
+                    </>
                 ) : (
-                    <Card className="max-w-md mx-auto">
-                        <CardHeader>
-                            <CardTitle>Upload Laporan Akhir (100%)</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {message && <p className="text-green-600 mb-2 text-sm">{message}</p>}
-                            <form onSubmit={handleSubmitAkhir} className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Link Google Drive / Dokumen</label>
-                                    <div className="relative">
-                                        <Upload className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                        <Input
-                                            placeholder="https://docs.google.com/..."
-                                            className="pl-10"
-                                            value={formAkhir.fileUrl}
-                                            onChange={(e) => setFormAkhir({ ...formAkhir, fileUrl: e.target.value })}
-                                            required
-                                        />
+                    <>
+                        <Card className="max-w-md mx-auto">
+                            <CardHeader>
+                                <CardTitle>Upload Laporan Akhir (100%)</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {message && <p className="text-green-600 mb-2 text-sm">{message}</p>}
+                                <form onSubmit={handleSubmitAkhir} className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Link Google Drive / Dokumen</label>
+                                        <div className="relative">
+                                            <Upload className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                            <Input
+                                                placeholder="https://docs.google.com/..."
+                                                className="pl-10"
+                                                value={formAkhir.fileUrl}
+                                                onChange={(e) => setFormAkhir({ ...formAkhir, fileUrl: e.target.value })}
+                                                required
+                                            />
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Link Laporan Final (Setelah Sidang)</label>
-                                    <div className="relative">
-                                        <Upload className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                        <Input
-                                            placeholder="https://docs.google.com/..."
-                                            className="pl-10"
-                                            value={formAkhir.finalUrl}
-                                            onChange={(e) => setFormAkhir({ ...formAkhir, finalUrl: e.target.value })}
-                                        />
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Link Laporan Final (Setelah Sidang)</label>
+                                        <div className="relative">
+                                            <Upload className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                            <Input
+                                                placeholder="https://docs.google.com/..."
+                                                className="pl-10"
+                                                value={formAkhir.finalUrl}
+                                                onChange={(e) => setFormAkhir({ ...formAkhir, finalUrl: e.target.value })}
+                                            />
+                                        </div>
                                     </div>
-                                </div>
-                                <Button type="submit" className="w-full" disabled={loading}>
-                                    Submit Laporan Akhir
-                                </Button>
-                            </form>
-                        </CardContent>
-                    </Card>
+                                    <Button type="submit" className="w-full" disabled={loading}>
+                                        Submit Laporan Akhir
+                                    </Button>
+                                </form>
+                            </CardContent>
+                        </Card>
+
+                        <div className="mt-6">
+                            {laporanAkhir && (
+                                <Card className="max-w-md mx-auto bg-purple-50 border-purple-100">
+                                    <CardContent className="pt-6">
+                                        <h3 className="font-semibold text-purple-900 mb-2">Laporan Akhir Submitted</h3>
+                                        <div className="space-y-3 text-sm">
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-600">Status:</span>
+                                                <span className="font-medium bg-purple-100 px-2 py-0.5 rounded text-purple-800">{laporanAkhir.status}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center bg-white p-2 rounded border">
+                                                <span className="text-gray-600">Laporan Akhir:</span>
+                                                <a href={laporanAkhir.fileUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-medium">
+                                                    Buka
+                                                </a>
+                                            </div>
+                                            {laporanAkhir.finalUrl && (
+                                                <div className="flex justify-between items-center bg-white p-2 rounded border">
+                                                    <span className="text-gray-600">Laporan Final:</span>
+                                                    <a href={laporanAkhir.finalUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-medium">
+                                                        Buka
+                                                    </a>
+                                                </div>
+                                            )}
+                                            <div className="text-xs text-gray-500 pt-2 text-right">
+                                                Last updated: {new Date(laporanAkhir.updatedAt).toLocaleDateString()}
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
+                    </>
                 )}
             </motion.div>
-        </div>
+        </div >
     );
 }

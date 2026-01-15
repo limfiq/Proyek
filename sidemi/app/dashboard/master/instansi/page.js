@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Pagination } from '@/components/ui/pagination';
 import api from '@/lib/api';
+import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 
 export default function MasterInstansiPage() {
     const [instansis, setInstansis] = useState([]);
@@ -48,6 +49,30 @@ export default function MasterInstansiPage() {
         } catch (err) {
             console.error(err);
         }
+    };
+
+    const handleExportExcel = () => {
+        const data = instansis.map((item, index) => ({
+            No: index + 1,
+            Nama: item.nama,
+            Alamat: item.alamat,
+            Kontak: item.kontak,
+            Pimpinan: item.pimpinan,
+            NoSurat: item.noSurat
+        }));
+        exportToExcel(data, 'Data_Instansi');
+    };
+
+    const handleExportPDF = () => {
+        const columns = ['No', 'Nama', 'Alamat', 'Kontak', 'Pimpinan'];
+        const data = instansis.map((item, index) => [
+            index + 1,
+            item.nama,
+            item.alamat,
+            item.kontak,
+            item.pimpinan
+        ]);
+        exportToPDF('Data Master Instansi', columns, data, 'Data_Instansi');
     };
 
     const handleSubmit = async (e) => {
@@ -187,7 +212,15 @@ export default function MasterInstansiPage() {
                 <CardHeader>
                     <div className="flex flex-col md:flex-row justify-between gap-4">
                         <CardTitle>Daftar Instansi</CardTitle>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col md:flex-row items-center gap-2">
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="sm" onClick={handleExportExcel}>
+                                    Export Excel
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={handleExportPDF}>
+                                    Export PDF
+                                </Button>
+                            </div>
                             <div className="relative w-full md:w-64">
                                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input

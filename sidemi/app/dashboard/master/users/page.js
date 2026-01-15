@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Trash2, Pencil, Search, FileSpreadsheet, Download } from 'lucide-react';
 import api from '@/lib/api';
 import { Pagination } from '@/components/ui/pagination';
+import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 
 export default function MasterUsersPage() {
     const [users, setUsers] = useState([]);
@@ -243,6 +244,58 @@ export default function MasterUsersPage() {
         setCurrentPage(1);
     }, [searchQuery, itemsPerPage]);
 
+    const handleExportExcel = () => {
+        const data = users.map((u, index) => {
+            let profileName = '';
+            let nomerInduk = '';
+            let prodiName = '';
+
+            if (u.role === 'MAHASISWA') {
+                profileName = u.mahasiswa?.nama || '';
+                nomerInduk = u.mahasiswa?.nim || '';
+                prodiName = u.mahasiswa?.prodi?.nama || '';
+            } else if (u.role === 'DOSEN') {
+                profileName = u.dosen?.nama || '';
+                nomerInduk = u.dosen?.nidn || '';
+            } else if (u.role === 'INSTANSI') {
+                profileName = u.instansi?.nama || '';
+            }
+
+            return {
+                No: index + 1,
+                Username: u.username,
+                Role: u.role,
+                Name: profileName,
+                NIM_NIDN: nomerInduk,
+                Prodi: prodiName
+            };
+        });
+        exportToExcel(data, 'Data_Users');
+    };
+
+    const handleExportPDF = () => {
+        const columns = ['No', 'Username', 'Role', 'Name', 'NIM/NIDN', 'Prodi'];
+        const data = users.map((u, index) => {
+            let profileName = '';
+            let nomerInduk = '';
+            let prodiName = '';
+
+            if (u.role === 'MAHASISWA') {
+                profileName = u.mahasiswa?.nama || '';
+                nomerInduk = u.mahasiswa?.nim || '';
+                prodiName = u.mahasiswa?.prodi?.nama || '';
+            } else if (u.role === 'DOSEN') {
+                profileName = u.dosen?.nama || '';
+                nomerInduk = u.dosen?.nidn || '';
+            } else if (u.role === 'INSTANSI') {
+                profileName = u.instansi?.nama || '';
+            }
+
+            return [index + 1, u.username, u.role, profileName, nomerInduk, prodiName];
+        });
+        exportToPDF('Data Master Users', columns, data, 'Data_Users', 'landscape');
+    };
+
     return (
         <div className="space-y-6">
             <h1 className="text-2xl font-bold">Data Master Users</h1>
@@ -350,6 +403,8 @@ export default function MasterUsersPage() {
                     </Select>
                 </div>
                 <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={handleExportExcel}>XLS</Button>
+                    <Button variant="outline" size="sm" onClick={handleExportPDF}>PDF</Button>
                     <Button variant="outline" size="sm" onClick={handleDownloadTemplate} title="Download Template CSV">
                         <Download className="h-4 w-4 mr-2" />
                         Template

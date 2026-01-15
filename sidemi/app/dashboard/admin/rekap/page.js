@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
+import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -167,9 +168,78 @@ export default function AdminRekapPage() {
     });
 
     const totalPages = Math.ceil(filteredRecap.length / (pageSize === 'ALL' ? filteredRecap.length : pageSize));
+
     const paginatedRecap = pageSize === 'ALL'
         ? filteredRecap
         : filteredRecap.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+    const getExportScore = (item, role) => {
+        if (!kriteriaList?.length) return item.scores[role];
+        const criteria = kriteriaList.filter(k => k.tipe === item.tipe && k.role === role);
+        if (!criteria.length) return item.scores[role];
+
+        let totalW = 0, totalS = 0, found = false;
+        criteria.forEach(k => {
+            const val = item.detailed?.[k.id];
+            if (val !== undefined && val !== null) {
+                totalS += (parseFloat(val) || 0) * k.bobot;
+                totalW += k.bobot;
+                found = true;
+            }
+        });
+
+        if (found && totalW > 0) return (totalS / totalW).toFixed(2);
+        return item.scores[role];
+    };
+
+    const getGrade = (val) => {
+        const s = parseFloat(val);
+        if (isNaN(s)) return '-';
+        if (s <= 10) return 'E';
+        if (s <= 20) return 'DE';
+        if (s <= 30) return 'D';
+        if (s <= 40) return 'CD';
+        if (s <= 50) return 'C';
+        if (s <= 60) return 'BC';
+        if (s <= 70) return 'B';
+        if (s <= 80) return 'AB';
+        return 'A';
+    };
+
+    const handleExportExcel = () => {
+        const data = filteredRecap.map((r, index) => ({
+            No: index + 1,
+            Mahasiswa: r.mahasiswa,
+            NIM: r.nim,
+            Tipe: r.tipe,
+            Logbook: r.scores.LOGBOOK,
+            Monev: r.scores.MONEV,
+            Pembimbing: getExportScore(r, 'PEMBIMBING'),
+            Penguji: getExportScore(r, 'PENGUJI'),
+            Instansi: getExportScore(r, 'INSTANSI'),
+            Nilai_Akhir: r.finalScore,
+            Grade: getGrade(r.finalScore)
+        }));
+        exportToExcel(data, 'Rekap_Nilai_PKL');
+    };
+
+    const handleExportPDF = () => {
+        const columns = ['No', 'Mahasiswa', 'NIM', 'Tipe', 'Logbook', 'Monev', 'Pembimbing', 'Penguji', 'Instansi', 'Final', 'Grade'];
+        const data = filteredRecap.map((r, index) => [
+            index + 1,
+            r.mahasiswa,
+            r.nim,
+            r.tipe,
+            r.scores.LOGBOOK,
+            r.scores.MONEV,
+            getExportScore(r, 'PEMBIMBING'),
+            getExportScore(r, 'PENGUJI'),
+            getExportScore(r, 'INSTANSI'),
+            r.finalScore,
+            getGrade(r.finalScore)
+        ]);
+        exportToPDF('Rekapitulasi Nilai PKL', columns, data, 'Rekap_Nilai_PKL', 'landscape');
+    };
 
     const renderScore = (score, status) => {
         if (!status) {
@@ -183,6 +253,8 @@ export default function AdminRekapPage() {
             <div className="flex justify-between items-center no-print">
                 <h1 className="text-2xl font-bold">Rekapitulasi Nilai PKL</h1>
                 <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={handleExportExcel}>XLS</Button>
+                    <Button variant="outline" size="sm" onClick={handleExportPDF}>PDF</Button>
                     <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Pilih Periode" />

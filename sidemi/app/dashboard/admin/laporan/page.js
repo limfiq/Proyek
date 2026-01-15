@@ -9,6 +9,7 @@ import { Printer, Edit, PlusCircle, FileText, CheckCircle, XCircle, ExternalLink
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Pagination } from '@/components/ui/pagination';
+import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 import {
     Select,
     SelectContent,
@@ -163,13 +164,61 @@ export default function AdminLaporanPage() {
         }
     };
 
+    const handleExportExcel = () => {
+        const data = currentStudents.map((item, index) => {
+            const akhir = getLatestLaporan(item.stats?.laporanAkhir);
+            return {
+                No: index + 1,
+                Mahasiswa: item.mahasiswa?.nama,
+                NIM: item.mahasiswa?.nim,
+                Instansi: item.instansi?.nama,
+                Tipe: item.tipe,
+                Harian: item.stats?.harianCount || 0,
+                Mingguan: item.stats?.mingguanCount || 0,
+                Laporan_Tengah: item.stats?.laporanTengah ? 'Ada' : 'Belum',
+                Laporan_Akhir: akhir?.fileUrl ? 'Ada' : 'Belum',
+                Bukti_IKU: akhir?.ikuUrl ? 'Ada' : 'Belum',
+                Laporan_Final: akhir?.finalUrl ? 'Ada' : 'Belum'
+            };
+        });
+        exportToExcel(data, 'Rekap_Laporan_Mahasiswa');
+    };
+
+    const handleExportPDF = () => {
+        const columns = ['No', 'Mahasiswa', 'NIM', 'Instansi', 'Tipe', 'Harian', 'Mingguan', 'Tengah', 'Akhir', 'Final'];
+        const data = currentStudents.map((item, index) => {
+            const akhir = getLatestLaporan(item.stats?.laporanAkhir);
+            return [
+                index + 1,
+                item.mahasiswa?.nama,
+                item.mahasiswa?.nim,
+                item.instansi?.nama,
+                item.tipe,
+                item.stats?.harianCount || 0,
+                item.stats?.mingguanCount || 0,
+                item.stats?.laporanTengah ? 'Ada' : 'Belum',
+                akhir?.fileUrl ? 'Ada' : 'Belum',
+                akhir?.finalUrl ? 'Ada' : 'Belum'
+            ];
+        });
+        exportToPDF('Rekap Laporan Mahasiswa', columns, data, 'Rekap_Laporan_Mahasiswa', 'landscape');
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center no-print">
                 <h1 className="text-2xl font-bold">Rekap Laporan Mahasiswa</h1>
-                <Button onClick={() => window.print()}>
-                    <Printer className="mr-2 h-4 w-4" /> Cetak Rekap
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={handleExportExcel}>
+                        Export Excel
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleExportPDF}>
+                        Export PDF
+                    </Button>
+                    <Button onClick={() => window.print()}>
+                        <Printer className="mr-2 h-4 w-4" /> Cetak Rekap
+                    </Button>
+                </div>
             </div>
 
             {/* FIlters */}

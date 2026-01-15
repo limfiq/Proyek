@@ -39,7 +39,7 @@ export function Sidebar() {
             </div>
 
             <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-                {sidebarLinks.filter(link => link.roles.includes(role)).map((link) => {
+                {sidebarLinks.filter(link => link.roles.includes(role?.toUpperCase())).map((link) => {
                     const Icon = link.icon;
                     const isActive = pathname === link.href;
                     return (
@@ -60,28 +60,7 @@ export function Sidebar() {
                 })}
             </nav>
 
-            <div className="p-4 m-4 rounded-xl bg-white/10 backdrop-blur-sm">
-                <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-white text-primary flex items-center justify-center font-bold shadow-md">
-                        {role[0]}
-                    </div>
-                    <div className="overflow-hidden">
-                        <p className="text-sm font-medium truncate">{role}</p>
-                        <Link href="/dashboard/profile" className="text-xs text-white/70 hover:text-white hover:underline block mb-1">
-                            Ganti Password
-                        </Link>
-                        <button
-                            onClick={() => {
-                                localStorage.clear();
-                                window.location.href = '/login';
-                            }}
-                            className="text-xs text-white/70 hover:text-white hover:underline flex items-center gap-1"
-                        >
-                            Log Out
-                        </button>
-                    </div>
-                </div>
-            </div>
+
         </div>
     );
 }

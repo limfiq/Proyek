@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import api from '@/lib/api';
 import { BadgeCheck, Clock, XCircle, UserCheck, Plus, Building2, Search, Upload, FileSpreadsheet, Download, Check, ChevronsUpDown } from 'lucide-react';
 import { Pagination } from '@/components/ui/pagination';
+import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 import {
     Command,
     CommandEmpty,
@@ -230,6 +231,37 @@ export default function AdminValidasiPage() {
         ? filteredRegistrations
         : filteredRegistrations.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
+    const handleExportExcel = () => {
+        const data = registrations.map((r, index) => ({
+            No: index + 1,
+            Mahasiswa: r.mahasiswa?.nama,
+            NIM: r.mahasiswa?.nim,
+            Prodi: r.mahasiswa?.prodi?.nama,
+            Tipe: r.tipe,
+            Instansi: r.instansi?.nama,
+            Pembimbing: r.pembimbing?.nama || 'Belum ditunjuk',
+            Status: r.status
+        }));
+        exportToExcel(data, 'Data_Validasi_PKL');
+    };
+
+    const handleExportPDF = () => {
+        const columns = ['No', 'Mahasiswa', 'NIM', 'Prodi', 'Tipe', 'Instansi', 'Pembimbing', 'Status'];
+        const data = registrations.map((r, index) => [
+            index + 1,
+            r.mahasiswa?.nama,
+            r.mahasiswa?.nim,
+            r.mahasiswa?.prodi?.nama,
+            r.tipe,
+            r.instansi?.nama,
+            r.pembimbing?.nama || 'Belum ditunjuk',
+            r.status
+        ]);
+        exportToPDF('Validasi & Plotting PKL', columns, data, 'Data_Validasi_PKL', 'landscape');
+    };
+
+    // Prepared Options for Combobox
+
     // Prepared Options for Combobox
     const mahasiswaOptions = mahasiswas.map(m => ({
         value: String(m.id),
@@ -251,6 +283,8 @@ export default function AdminValidasiPage() {
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-gray-800">Validasi & Plotting PKL</h1>
                 <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={handleExportExcel}>XLS</Button>
+                    <Button variant="outline" size="sm" onClick={handleExportPDF}>PDF</Button>
                     <Button variant="outline" size="sm" onClick={handleDownloadTemplate} title="Download Template CSV">
                         <Download className="h-4 w-4 mr-2" />
                         Template
