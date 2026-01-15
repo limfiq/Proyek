@@ -29,7 +29,7 @@ export default function AdminLaporanPage() {
 
     const [editOpen, setEditOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
-    const [uploadForm, setUploadForm] = useState({ fileUrl: '', type_iku: '', ikuUrl: '' });
+    const [uploadForm, setUploadForm] = useState({ fileUrl: '', type_iku: '', ikuUrl: '', finalUrl: '' });
 
     useEffect(() => {
         loadData();
@@ -135,7 +135,8 @@ export default function AdminLaporanPage() {
         setUploadForm({
             fileUrl: akhir?.fileUrl || '',
             type_iku: akhir?.type_iku || '',
-            ikuUrl: akhir?.ikuUrl || ''
+            ikuUrl: akhir?.ikuUrl || '',
+            finalUrl: akhir?.finalUrl || ''
         });
         setEditOpen(true);
     };
@@ -228,6 +229,7 @@ export default function AdminLaporanPage() {
                                     <TableHead className="text-center">Laporan Tengah</TableHead>
                                     <TableHead className="text-center">Laporan Akhir</TableHead>
                                     <TableHead className="text-center">Bukti IKU</TableHead>
+                                    <TableHead className="text-center">Laporan Final</TableHead>
                                     <TableHead className="text-right no-print">Aksi</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -295,6 +297,22 @@ export default function AdminLaporanPage() {
                                                 })()
                                             ) : <span className="text-gray-300">...</span>}
                                         </TableCell>
+                                        <TableCell className="text-center">
+                                            {item.stats ? (
+                                                (() => {
+                                                    const akhir = getLatestLaporan(item.stats.laporanAkhir);
+                                                    if (akhir && akhir.finalUrl) {
+                                                        const url = akhir.finalUrl.startsWith('http') ? akhir.finalUrl : `https://${akhir.finalUrl}`;
+                                                        return (
+                                                            <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center text-purple-600 hover:underline text-xs gap-1">
+                                                                <FileText className="h-3 w-3" /> Final
+                                                            </a>
+                                                        );
+                                                    }
+                                                    return <span className="text-gray-300 text-xs">-</span>;
+                                                })()
+                                            ) : <span className="text-gray-300">...</span>}
+                                        </TableCell>
                                         <TableCell className="text-right no-print">
                                             <Button
                                                 variant="ghost"
@@ -309,7 +327,7 @@ export default function AdminLaporanPage() {
                                 ))}
                                 {students.length === 0 && !loading && (
                                     <TableRow>
-                                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                                        <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                                             Belum ada data pendaftaran aktif.
                                         </TableCell>
                                     </TableRow>
@@ -349,6 +367,14 @@ export default function AdminLaporanPage() {
                                 placeholder="https://..."
                                 value={uploadForm.ikuUrl}
                                 onChange={(e) => setUploadForm({ ...uploadForm, ikuUrl: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold">Link Laporan Final (Setelah Sidang)</label>
+                            <Input
+                                placeholder="https://..."
+                                value={uploadForm.finalUrl}
+                                onChange={(e) => setUploadForm({ ...uploadForm, finalUrl: e.target.value })}
                             />
                         </div>
                     </div>
