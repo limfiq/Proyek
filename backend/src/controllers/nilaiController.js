@@ -97,8 +97,14 @@ exports.getRecap = async (req, res) => {
             include: [{ model: KriteriaNilai, as: 'kriteria' }]
         });
 
+        // Fetch Sidangs to get revisions
+        const sidangs = await Sidang.findAll({
+            where: { pendaftaranId: pendaftarans.map(p => p.id) }
+        });
+
         const recap = pendaftarans.map(p => {
             const pNilai = allNilai.filter(n => n.pendaftaranId === p.id);
+            const pSigang = sidangs.find(s => s.pendaftaranId === p.id);
 
             // Helper to get average score for a role
             const getRoleScore = (role) => {
@@ -193,7 +199,9 @@ exports.getRecap = async (req, res) => {
                 scores,
                 detailed, // New field for frontend edit form
                 status,
-                finalScore: finalScore.toFixed(2)
+                status,
+                finalScore: finalScore.toFixed(2),
+                revisi: pSigang ? pSigang.revisiPenguji : ''
             };
         });
 

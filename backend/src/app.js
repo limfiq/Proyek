@@ -24,10 +24,12 @@ const authRoutes = require('./routes/authRoutes');
 const masterRoutes = require('./routes/masterRoutes');
 const pklRoutes = require('./routes/pklRoutes');
 const nilaiRoutes = require('./routes/nilaiRoutes');
+const publicRoutes = require('./routes/publicRoutes');
 app.use('/auth', authRoutes);
 app.use('/api', masterRoutes);
 app.use('/api', pklRoutes);
 app.use('/api', nilaiRoutes);
+app.use('/api/public', publicRoutes);
 
 // Database Sync & Server Start
 const db = require('./models');
@@ -38,7 +40,7 @@ const startServer = async () => {
         console.log('Database connection has been established successfully.');
 
         // Sync models with database (alter: true updates schema without dropping data)
-        await db.sequelize.sync({ alter: true });
+        await db.sequelize.sync({ alter: false });
         console.log('Database synced.');
 
         app.listen(port, () => {

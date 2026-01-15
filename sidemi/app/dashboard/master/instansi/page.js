@@ -30,7 +30,8 @@ export default function MasterInstansiPage() {
     const [loading, setLoading] = useState(false);
     const [form, setForm] = useState({
         nama: '', alamat: '', kontak: '',
-        mapsUrl: '', pimpinan: '', logoUrl: '', noSurat: ''
+        mapsUrl: '', pimpinan: '', logoUrl: '', noSurat: '',
+        posisi: '', kota: '', jenisLowongan: '', isActive: true
     });
 
     // Pagination & Search State
@@ -87,7 +88,8 @@ export default function MasterInstansiPage() {
             setForm({
                 id: null,
                 nama: '', alamat: '', kontak: '',
-                mapsUrl: '', pimpinan: '', logoUrl: '', noSurat: ''
+                mapsUrl: '', pimpinan: '', logoUrl: '', noSurat: '',
+                posisi: '', kota: '', jenisLowongan: '', isActive: true
             });
             loadInstansi();
         } catch (err) {
@@ -113,9 +115,12 @@ export default function MasterInstansiPage() {
     };
 
     // Filter Logic
+    // Filter Logic
     const filteredInstansis = instansis.filter(item =>
         item.nama?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.alamat?.toLowerCase().includes(searchTerm.toLowerCase())
+        item.alamat?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.posisi?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.kota?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     // Pagination Logic
@@ -191,6 +196,45 @@ export default function MasterInstansiPage() {
                             />
                         </div>
 
+                        <div className="grid md:grid-cols-4 gap-4">
+                            <Input
+                                placeholder="Posisi Magang"
+                                value={form.posisi || ''}
+                                onChange={(e) => setForm({ ...form, posisi: e.target.value })}
+                            />
+                            <Input
+                                placeholder="Kota Penempatan"
+                                value={form.kota || ''}
+                                onChange={(e) => setForm({ ...form, kota: e.target.value })}
+                            />
+                            <Select
+                                value={form.jenisLowongan || ''}
+                                onValueChange={(val) => setForm({ ...form, jenisLowongan: val })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Jenis Lowongan" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Magang Reguler">Magang Reguler</SelectItem>
+                                    <SelectItem value="Magang Bersertifikat">Magang Bersertifikat</SelectItem>
+                                    <SelectItem value="Magang Mandiri">Magang Mandiri</SelectItem>
+                                    <SelectItem value="MBKM">MBKM</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select
+                                value={form.isActive ? "true" : "false"}
+                                onValueChange={(val) => setForm({ ...form, isActive: val === "true" })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="true">Aktif</SelectItem>
+                                    <SelectItem value="false">Tidak Aktif</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
                         <div className="flex gap-2">
                             <Button type="submit" disabled={loading}>
                                 {form.id ? 'Update Data' : 'Simpan Data'}
@@ -198,7 +242,8 @@ export default function MasterInstansiPage() {
                             {form.id && (
                                 <Button type="button" variant="outline" onClick={() => setForm({
                                     id: null, nama: '', alamat: '', kontak: '',
-                                    mapsUrl: '', pimpinan: '', logoUrl: '', noSurat: ''
+                                    mapsUrl: '', pimpinan: '', logoUrl: '', noSurat: '',
+                                    posisi: '', kota: '', jenisLowongan: '', isActive: true
                                 })}>
                                     Batal
                                 </Button>
@@ -254,8 +299,9 @@ export default function MasterInstansiPage() {
                                 <TableRow>
                                     <TableHead className="w-[50px]">No</TableHead>
                                     <TableHead>Nama Instansi</TableHead>
-                                    <TableHead>Alamat</TableHead>
-                                    <TableHead>Kontak</TableHead>
+                                    <TableHead>Posisi</TableHead>
+                                    <TableHead>Kota</TableHead>
+                                    <TableHead>Status</TableHead>
                                     <TableHead className="text-right">Aksi</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -269,8 +315,13 @@ export default function MasterInstansiPage() {
                                                     : (currentPage - 1) * parseInt(itemsPerPage) + index + 1}
                                             </TableCell>
                                             <TableCell className="font-medium">{item.nama}</TableCell>
-                                            <TableCell>{item.alamat || '-'}</TableCell>
-                                            <TableCell>{item.kontak || '-'}</TableCell>
+                                            <TableCell>{item.posisi || '-'}</TableCell>
+                                            <TableCell>{item.kota || '-'}</TableCell>
+                                            <TableCell>
+                                                <span className={`px-2 py-1 rounded text-xs font-semibold ${item.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                    {item.isActive ? 'Aktif' : 'Non-Aktif'}
+                                                </span>
+                                            </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
                                                     <Button

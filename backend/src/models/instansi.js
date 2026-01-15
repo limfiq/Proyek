@@ -31,6 +31,13 @@ module.exports = (sequelize, DataTypes) => {
         isProposed: {
             type: DataTypes.BOOLEAN,
             defaultValue: false
+        },
+        posisi: DataTypes.STRING,      // e.g. "Frontend Developer"
+        kota: DataTypes.STRING,        // e.g. "Jakarta"
+        jenisLowongan: DataTypes.STRING, // e.g. "Magang Bersertifikat", "MBKM"
+        isActive: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: true
         }
     }, {
         sequelize,

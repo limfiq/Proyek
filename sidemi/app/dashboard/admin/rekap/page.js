@@ -218,13 +218,14 @@ export default function AdminRekapPage() {
             Penguji: getExportScore(r, 'PENGUJI'),
             Instansi: getExportScore(r, 'INSTANSI'),
             Nilai_Akhir: r.finalScore,
-            Grade: getGrade(r.finalScore)
+            Grade: getGrade(r.finalScore),
+            Revisi: r.revisi || '-'
         }));
         exportToExcel(data, 'Rekap_Nilai_PKL');
     };
 
     const handleExportPDF = () => {
-        const columns = ['No', 'Mahasiswa', 'NIM', 'Tipe', 'Logbook', 'Monev', 'Pembimbing', 'Penguji', 'Instansi', 'Final', 'Grade'];
+        const columns = ['No', 'Mahasiswa', 'NIM', 'Tipe', 'Logbook', 'Monev', 'Pembimbing', 'Penguji', 'Instansi', 'Final', 'Grade', 'Revisi'];
         const data = filteredRecap.map((r, index) => [
             index + 1,
             r.mahasiswa,
@@ -236,7 +237,8 @@ export default function AdminRekapPage() {
             getExportScore(r, 'PENGUJI'),
             getExportScore(r, 'INSTANSI'),
             r.finalScore,
-            getGrade(r.finalScore)
+            getGrade(r.finalScore),
+            r.revisi || '-'
         ]);
         exportToPDF('Rekapitulasi Nilai PKL', columns, data, 'Rekap_Nilai_PKL', 'landscape');
     };
@@ -436,6 +438,7 @@ function RecapTable({ data, handleEdit, renderScore, kriteriaList }) {
                                 <TableHead className="text-center">Instansi</TableHead>
                                 <TableHead className="text-right">Nilai Akhir</TableHead>
                                 <TableHead className="text-center">Nilai Huruf</TableHead>
+                                <TableHead>Revisi Penguji</TableHead>
                                 <TableHead className="text-right no-print">Aksi</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -467,6 +470,9 @@ function RecapTable({ data, handleEdit, renderScore, kriteriaList }) {
                                     </TableCell>
                                     <TableCell className="text-center font-bold text-lg">
                                         {getGrade(item.finalScore)}
+                                    </TableCell>
+                                    <TableCell className="max-w-xs truncate" title={item.revisi}>
+                                        {item.revisi || '-'}
                                     </TableCell>
                                     <TableCell className="text-right no-print">
                                         {parseFloat(item.finalScore) > 0 ? (

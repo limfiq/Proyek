@@ -46,18 +46,19 @@ export default function LoginPage() {
             >
                 <Card className="glass border-none shadow-2xl">
                     <CardHeader className="space-y-1 text-center">
+                        <div className="flex justify-center mb-2">
+                            <img
+                                src="/logo.png"
+                                alt="Logo"
+                                className="w-[100px] h-[100px] object-contain"
+                            />
+                        </div>
                         <CardTitle className="text-3xl font-bold tracking-tight text-primary">SiMagang Pintar</CardTitle>
                         <p className="text-sm text-muted-foreground">Sistem Informasi Magang Mahasiswa STIKOM PGRI Banyuwangi</p>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="flex justify-center mb-2">
-                                <img
-                                    src="/logo.png"
-                                    alt="Logo"
-                                    className="w-[100px] h-[100px] object-contain"
-                                />
-                            </div>
+
 
                             <div className="space-y-2">
                                 <div className="relative">

@@ -93,6 +93,17 @@ export default function NilaiPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {nilai.revisi && (
+                <Card className="mt-6 border-l-4 border-l-yellow-500">
+                    <CardHeader>
+                        <CardTitle>Revisi dari Dosen Penguji</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-gray-700 whitespace-pre-line">{nilai.revisi}</p>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 }

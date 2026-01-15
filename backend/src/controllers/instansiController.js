@@ -12,16 +12,39 @@ exports.findAll = async (req, res) => {
 
 exports.create = async (req, res) => {
     try {
-        // Determine if it's a proposal (student) or admin entry
-        const { nama, alamat, kontak, isProposed } = req.body;
-        // req.userId comes from auth middleware if we link it
-
-        // Logic: if created by student, isProposed=true (default in FE/BE logic)
-        // Here just basic create
+        const { nama, alamat, kontak, isProposed, posisi, kota, jenisLowongan } = req.body;
         const instansi = await Instansi.create({
-            nama, alamat, kontak, isProposed
+            nama, alamat, kontak, isProposed, posisi, kota, jenisLowongan
         });
         res.send(instansi);
+    } catch (err) {
+        res.status(500).send({ message: err.message });
+    }
+};
+
+exports.findPublic = async (req, res) => {
+    try {
+        const data = await Instansi.findAll({
+            where: { isActive: true },
+            attributes: ['id', 'nama', 'posisi', 'kota', 'jenisLowongan', 'logoUrl']
+        });
+        res.send(data);
+    } catch (err) {
+        res.status(500).send({ message: err.message });
+    }
+};
+
+exports.findPublicOne = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const data = await Instansi.findOne({
+            where: { id: id, isActive: true },
+            attributes: ['id', 'nama', 'alamat', 'kontak', 'posisi', 'kota', 'jenisLowongan', 'logoUrl', 'updatedAt']
+        });
+        if (!data) {
+            return res.status(404).send({ message: "Lowongan detail not found" });
+        }
+        res.send(data);
     } catch (err) {
         res.status(500).send({ message: err.message });
     }
