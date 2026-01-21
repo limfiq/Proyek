@@ -221,7 +221,7 @@ export default function LandingPage() {
       {/* Why Join */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-12">Mengapa Menggunakan SID3MI?</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-12">Mengapa Menggunakan siMagang?</h2>
           <div className="grid md:grid-cols-3 gap-10">
             <div className="text-center">
               <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -277,7 +277,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-4 gap-12">
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center gap-2 mb-6">
-              <span className="text-2xl font-bold text-white">SID3MI</span>
+              <span className="text-2xl font-bold text-white">siMagang</span>
             </div>
             <p className="text-sm leading-relaxed text-white">
               Platform ekosistem digital untuk pengelolaan program Magang dan Studi Independen Bersertifikat (MSIB) dan PKL.
@@ -318,7 +318,7 @@ export default function LandingPage() {
           </div>
         </div>
         <div className="max-w-7xl mx-auto px-4 mt-16 pt-8 border-t border-gray-800 text-sm text-center text-white">
-          © 2026 SID3MI System. All rights reserved. Made with ❤️ for Education.
+          © 2026 siMagang System. All rights reserved. Made with ❤️ for Education.
         </div>
       </footer>
     </div>

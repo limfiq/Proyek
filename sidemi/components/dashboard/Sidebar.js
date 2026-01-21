@@ -29,9 +29,9 @@ export function Sidebar() {
         <div className="w-64 bg-primary text-white border-r h-screen hidden md:flex flex-col shadow-xl z-20">
             <div className="p-6 flex items-center gap-3">
                 <div className="bg-white/20 p-2 rounded-lg">
-                    <LayoutDashboard className="h-6 w-6 text-white" />
+                    <img src="/logo.png" alt="Logo" className="h-6 w-auto object-contain" />
                 </div>
-                <h1 className="text-2xl font-bold tracking-wider">SID3MI</h1>
+                <h1 className="text-2xl font-bold tracking-wider">siMagang</h1>
             </div>
 
             <div className="px-6 py-2">

@@ -38,9 +38,9 @@ export function Topbar() {
                     <SheetContent side="left" className="p-0 w-64 border-r bg-primary text-white">
                         <div className="p-6 flex items-center gap-3 border-b border-white/10">
                             <div className="bg-white/20 p-2 rounded-lg">
-                                <LayoutDashboard className="h-6 w-6 text-white" />
+                                <img src="/logo.png" alt="Logo" className="h-6 w-auto object-contain" />
                             </div>
-                            <h1 className="text-2xl font-bold tracking-wider">SID3MI</h1>
+                            <h1 className="text-2xl font-bold tracking-wider">siMagang</h1>
                         </div>
                         <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
                             {role && sidebarLinks.filter(link => link.roles.includes(role?.toUpperCase())).map((link) => {
