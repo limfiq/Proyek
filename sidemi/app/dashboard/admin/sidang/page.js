@@ -36,7 +36,7 @@ export default function AdminSidangPage() {
     const [sidangs, setSidangs] = useState([]);
     const [selectedStudentId, setSelectedStudentId] = useState(null); // ID or null
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [form, setForm] = useState({ dosenPengujiId: '', tanggal: '', ruang: '', sesi: '' });
+    const [form, setForm] = useState({ dosenPengujiId: '', tanggal: '', ruang: '', sesi: '', status: 'BELUM' });
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
@@ -78,10 +78,11 @@ export default function AdminSidangPage() {
                 dosenPengujiId: String(existing.dosenPengujiId || ''),
                 tanggal: existing.tanggal ? existing.tanggal.split('T')[0] : '',
                 ruang: existing.ruang || '',
-                sesi: existing.sesi || ''
+                sesi: existing.sesi || '',
+                status: existing.status || 'BELUM'
             });
         } else {
-            setForm({ dosenPengujiId: '', tanggal: '', ruang: '', sesi: '' });
+            setForm({ dosenPengujiId: '', tanggal: '', ruang: '', sesi: '', status: 'BELUM' });
         }
         setIsDialogOpen(true);
     };
@@ -148,6 +149,7 @@ export default function AdminSidangPage() {
     // Pagination logic moved below filters
     const [searchQuery, setSearchQuery] = useState('');
     const [filterTipe, setFilterTipe] = useState('ALL');
+    const [filterStatus, setFilterStatus] = useState('ALL');
     const [pageSize, setPageSize] = useState(10);
     const [isImporting, setIsImporting] = useState(false);
 
@@ -248,7 +250,17 @@ export default function AdminSidangPage() {
         const mhsNim = reg.mahasiswa?.nim?.toLowerCase() || '';
         const matchesSearch = mhsName.includes(query) || mhsNim.includes(query);
         const matchesTipe = filterTipe === 'ALL' || reg.tipe === filterTipe;
-        return matchesSearch && matchesTipe;
+
+        const sidang = getSidangInfo(reg.id);
+        // Status checks: 
+        // DONE = Sidang exists AND status === 'SUDAH'
+        // PENDING = Sidang doesn't exist OR status !== 'SUDAH'
+        const isDone = sidang && sidang.status === 'SUDAH';
+        const matchesStatus = filterStatus === 'ALL' ||
+            (filterStatus === 'DONE' && isDone) ||
+            (filterStatus === 'PENDING' && !isDone);
+
+        return matchesSearch && matchesTipe && matchesStatus;
     });
 
     const totalPages = Math.ceil(filteredPendaftarans.length / (pageSize === 'ALL' ? filteredPendaftarans.length : pageSize));
@@ -355,6 +367,17 @@ export default function AdminSidangPage() {
                         </SelectContent>
                     </Select>
 
+                    <Select value={filterStatus} onValueChange={val => { setFilterStatus(val); setCurrentPage(1); }}>
+                        <SelectTrigger className="w-[150px]">
+                            <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">Semua Status</SelectItem>
+                            <SelectItem value="DONE">Sudah Terlaksana</SelectItem>
+                            <SelectItem value="PENDING">Belum Terlaksana</SelectItem>
+                        </SelectContent>
+                    </Select>
+
                     <Select value={String(pageSize)} onValueChange={val => {
                         setPageSize(val === 'ALL' ? 'ALL' : Number(val));
                         setCurrentPage(1);
@@ -416,6 +439,13 @@ export default function AdminSidangPage() {
                                                     {sidang.ruang && <span className="mr-2">Ruang: {sidang.ruang}</span>}
                                                     {sidang.sesi && <span>Sesi: {sidang.sesi}</span>}
                                                 </div>
+                                                {sidang.status === 'SUDAH' && (
+                                                    <div className="mt-2">
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                                            Sudah Terlaksana
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : (
                                             <span className="inline-flex items-center px-2 py-1 rounded bg-gray-100 text-gray-500 text-xs font-medium">
@@ -498,6 +528,18 @@ export default function AdminSidangPage() {
                                     placeholder="Pilih Sesi"
                                 />
                             </div>
+                        </div>
+                        <div className="flex flex-col space-y-2">
+                            <label className="text-sm font-semibold text-gray-700">Status Sidang</label>
+                            <Select value={form.status} onValueChange={val => setForm({ ...form, status: val })}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Pilih Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="BELUM">Belum Terlaksana</SelectItem>
+                                    <SelectItem value="SUDAH">Sudah Terlaksana</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                     <DialogFooter>

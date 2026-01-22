@@ -10,6 +10,7 @@ module.exports = (sequelize, DataTypes) => {
             Pendaftaran.belongsTo(models.Periode, { foreignKey: 'periodeId', as: 'periode' });
             Pendaftaran.hasMany(models.LaporanHarian, { foreignKey: 'pendaftaranId', as: 'laporanHarian' });
             Pendaftaran.hasMany(models.LaporanMingguan, { foreignKey: 'pendaftaranId', as: 'laporanMingguan' });
+            Pendaftaran.hasOne(models.Sidang, { foreignKey: 'pendaftaranId', as: 'sidang' });
         }
     }
     Pendaftaran.init({

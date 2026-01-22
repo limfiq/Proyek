@@ -23,6 +23,7 @@ export default function PendaftaranPage() {
     const [message, setMessage] = useState('');
 
     const [availableTypes, setAvailableTypes] = useState([]);
+    const [registrationList, setRegistrationList] = useState([]); // [NEW] Store list of registrations
 
     useEffect(() => {
         loadInstansi();
@@ -42,11 +43,9 @@ export default function PendaftaranPage() {
         try {
             const res = await api.get('/api/pkl/me');
             if (res.data) {
-                // If already registered, we don't strictly need to limit availableTypes for display 
-                // as the form won't be shown (status view takes over), 
-                // but for consistency we can still fetch profile.
-                // However, priority is to show status.
-                // let's just fetch profile if no registration status or always.
+                // Ensure array, as API returns array
+                const data = Array.isArray(res.data) ? res.data : [res.data];
+                setRegistrationList(data);
             }
 
             // Fetch user profile to determine Prodi
@@ -111,6 +110,7 @@ export default function PendaftaranPage() {
             });
 
             setMessage('Pendaftaran berhasil dikirim! Menunggu persetujuan.');
+            checkStatus(); // Refresh list
         } catch (err) {
             setMessage(err.response?.data?.message || 'Gagal mendaftar');
         } finally {
@@ -125,10 +125,42 @@ export default function PendaftaranPage() {
                     <CardHeader>
                         <CardTitle className="text-2xl text-primary flex items-center gap-2">
                             <Briefcase className="h-6 w-6" />
-                            Pendaftaran PKL
+                            Pendaftaran Magang
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
+                        {/* History Section */}
+                        {registrationList.length > 0 && (
+                            <div className="mb-8 space-y-4">
+                                <h3 className="font-semibold text-lg">Riwayat Pendaftaran</h3>
+                                <div className="space-y-3">
+                                    {registrationList.map((reg) => (
+                                        <div key={reg.id} className="p-4 rounded-lg border bg-white shadow-sm flex justify-between items-center">
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-primary">{reg.tipe}</span>
+                                                    <span className="text-sm text-gray-500">• {reg.periode?.nama || 'Periode ???'}</span>
+                                                </div>
+                                                <p className="text-sm font-medium mt-1">{reg.instansi?.nama || 'Instansi ???'}</p>
+                                                {reg.judulProject && <p className="text-xs text-gray-500 italic">"{reg.judulProject}"</p>}
+                                            </div>
+                                            <div className="text-right">
+                                                <div className={`text-xs font-bold px-2 py-1 rounded-full mb-1 inline-block
+                                                    ${reg.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
+                                                        reg.status === 'ACTIVE' ? 'bg-blue-100 text-blue-700' :
+                                                            reg.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                                                                'bg-yellow-100 text-yellow-700'
+                                                    }`}>
+                                                    {reg.status}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="border-b my-4"></div>
+                            </div>
+                        )}
+
                         {message && (
                             <div className={`p-4 mb-4 rounded-lg ${message.includes('berhasil') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                 {message}

@@ -471,7 +471,7 @@ function RecapTable({ data, handleEdit, renderScore, kriteriaList }) {
                                     <TableCell className="text-center font-bold text-lg">
                                         {getGrade(item.finalScore)}
                                     </TableCell>
-                                    <TableCell className="max-w-xs truncate" title={item.revisi}>
+                                    <TableCell className="min-w-[200px] whitespace-pre-wrap">
                                         {item.revisi || '-'}
                                     </TableCell>
                                     <TableCell className="text-right no-print">

@@ -109,7 +109,7 @@ exports.myPendaftaran = async (req, res) => {
         console.log('Fetching pendaftaran for mhsId:', user.mahasiswa.id);
         const pendaftaran = await Pendaftaran.findAll({
             where: { mahasiswaId: user.mahasiswa.id },
-            include: ['instansi', 'pembimbing', 'periode']
+            include: ['instansi', 'pembimbing', 'periode', 'sidang']
         });
         console.log('Pendaftaran found:', pendaftaran.length);
 

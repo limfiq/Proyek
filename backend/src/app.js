@@ -8,7 +8,13 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+// Enable CORS for external devices and allow Authorization header
+const corsOptions = {
+    origin: true,
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
+};
+app.use(cors(corsOptions));
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
@@ -43,8 +49,9 @@ const startServer = async () => {
         await db.sequelize.sync({ alter: false });
         console.log('Database synced.');
 
-        app.listen(port, () => {
-            console.log(`Server is running on port ${port}`);
+        // Bind to 0.0.0.0 so the server is reachable from other devices on the network
+        app.listen(port, '0.0.0.0', () => {
+            console.log(`Server is running on port ${port} and bound to 0.0.0.0`);
         });
     } catch (error) {
         console.error('Unable to connect to the database:', error);

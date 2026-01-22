@@ -128,6 +128,29 @@ export default function DashboardPage() {
                             )}
                         </CardContent>
                     </Card>
+
+                    {/* New Revision Card */}
+                    <Card className={studentSidang && studentSidang.revisiPenguji ? "border-amber-200 bg-amber-50" : ""}>
+                        <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                            <CardTitle className="text-sm font-medium">Revisi Dosen</CardTitle>
+                            <Calendar className="h-4 w-4 text-amber-500" />
+                        </CardHeader>
+                        <CardContent>
+                            {studentSidang && studentSidang.revisiPenguji ? (
+                                <div className="space-y-1">
+                                    <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-[100px] overflow-y-auto">
+                                        {studentSidang.revisiPenguji}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-2">Segera perbaiki dan temui dosen.</p>
+                                </div>
+                            ) : (
+                                <div>
+                                    <div className="text-2xl font-bold">-</div>
+                                    <p className="text-xs text-muted-foreground">Tidak ada revisi</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
             )
         }

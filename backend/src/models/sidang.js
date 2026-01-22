@@ -21,7 +21,11 @@ module.exports = (sequelize, DataTypes) => {
         ruang: DataTypes.STRING,
         sesi: DataTypes.STRING,
         nilaiAkhir: DataTypes.FLOAT,
-        revisiPenguji: DataTypes.TEXT
+        revisiPenguji: DataTypes.TEXT,
+        status: {
+            type: DataTypes.ENUM('BELUM', 'SUDAH'),
+            defaultValue: 'BELUM'
+        }
     }, {
         sequelize,
         modelName: 'Sidang',

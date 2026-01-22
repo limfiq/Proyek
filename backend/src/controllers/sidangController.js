@@ -27,14 +27,14 @@ exports.getAllSidang = async (req, res) => {
 
 exports.createSchedule = async (req, res) => {
     try {
-        const { pendaftaranId, dosenPengujiId, tanggal, ruang, sesi } = req.body;
+        const { pendaftaranId, dosenPengujiId, tanggal, ruang, sesi, status } = req.body;
 
         // Check availability, etc. omitted for brevity
 
         // Check if exists
         const existing = await Sidang.findOne({ where: { pendaftaranId } });
         if (existing) {
-            await existing.update({ dosenPengujiId, tanggal, ruang, sesi });
+            await existing.update({ dosenPengujiId, tanggal, ruang, sesi, status });
             return res.send({ message: 'Jadwal sidang updated' });
         }
 
@@ -43,7 +43,8 @@ exports.createSchedule = async (req, res) => {
             dosenPengujiId,
             tanggal,
             ruang,
-            sesi
+            sesi,
+            status: status || 'BELUM'
         });
 
         res.status(201).send({ message: 'Jadwal sidang created' });
