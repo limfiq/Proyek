@@ -37,6 +37,11 @@ app.use('/api', pklRoutes);
 app.use('/api', nilaiRoutes);
 app.use('/api/public', publicRoutes);
 
+app.use((err, req, res, next) => {
+    console.error('Global Error Handler:', err);
+    res.status(500).json({ message: 'Internal Server Error', error: err.message });
+});
+
 // Database Sync & Server Start
 const db = require('./models');
 

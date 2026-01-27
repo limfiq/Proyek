@@ -8,6 +8,7 @@ module.exports = (sequelize, DataTypes) => {
             Pendaftaran.belongsTo(models.Instansi, { foreignKey: 'instansiId', as: 'instansi' });
             Pendaftaran.belongsTo(models.Dosen, { foreignKey: 'dosenPembimbingId', as: 'pembimbing' });
             Pendaftaran.belongsTo(models.Periode, { foreignKey: 'periodeId', as: 'periode' });
+            Pendaftaran.belongsTo(models.Loker, { foreignKey: 'lokerId', as: 'loker' });
             Pendaftaran.hasMany(models.LaporanHarian, { foreignKey: 'pendaftaranId', as: 'laporanHarian' });
             Pendaftaran.hasMany(models.LaporanMingguan, { foreignKey: 'pendaftaranId', as: 'laporanMingguan' });
             Pendaftaran.hasOne(models.Sidang, { foreignKey: 'pendaftaranId', as: 'sidang' });
@@ -27,6 +28,10 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true
         },
         periodeId: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
+        lokerId: {
             type: DataTypes.INTEGER,
             allowNull: true
         },

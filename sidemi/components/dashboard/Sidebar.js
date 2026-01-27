@@ -66,23 +66,29 @@ export function Sidebar() {
 }
 
 export const sidebarLinks = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['MAHASISWA', 'DOSEN', 'INSTANSI', 'ADMIN'] },
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['MAHASISWA', 'DOSEN', 'INSTANSI', 'ADMIN', 'SUPERADMIN', 'ADMINPRODI', 'ADMINKEMAHASISWAAN'] },
     // Mahasiswa
     { href: '/dashboard/pendaftaran', label: 'Pendaftaran', icon: FileText, roles: ['MAHASISWA'] },
+    { href: '/dashboard/mahasiswa/lowongan', label: 'Info Lowongan', icon: Building2, roles: ['MAHASISWA'] },
     { href: '/dashboard/laporan', label: 'Laporan', icon: BookOpen, roles: ['MAHASISWA'] },
     // Dosen
     { href: '/dashboard/bimbingan', label: 'Bimbingan', icon: Users, roles: ['DOSEN'] },
     { href: '/dashboard/sidang', label: 'Sidang', icon: GraduationCap, roles: ['DOSEN'] },
     // Instansi
     { href: '/dashboard/peserta', label: 'Peserta PKL', icon: Users, roles: ['INSTANSI'] },
-    // Admin
-    { href: '/dashboard/master/periode', label: 'Periode', icon: Calendar, roles: ['ADMIN'] },
-    { href: '/dashboard/master/prodi', label: 'Data Prodi', icon: GraduationCap, roles: ['ADMIN'] },
-    { href: '/dashboard/master/instansi', label: 'Data Instansi', icon: Building2, roles: ['ADMIN'] },
-    { href: '/dashboard/master/users', label: 'Users', icon: Users, roles: ['ADMIN'] },
-    { href: '/dashboard/master/kriteria', label: 'Kriteria Nilai', icon: Award, roles: ['ADMIN'] },
-    { href: '/dashboard/admin/validasi', label: 'Pendaftaran Magang', icon: FileText, roles: ['ADMIN'] },
-    { href: '/dashboard/admin/sidang', label: 'Jadwal Sidang', icon: Calendar, roles: ['ADMIN'] },
-    { href: '/dashboard/admin/rekap', label: 'Rekap Nilai', icon: BookOpen, roles: ['ADMIN'] },
-    { href: '/dashboard/admin/laporan', label: 'Rekap Laporan', icon: BookOpen, roles: ['ADMIN'] },
+    // Admin (Shared Logic for SUPERADMIN, ADMINPRODI)
+    { href: '/dashboard/master/periode', label: 'Periode', icon: Calendar, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI'] },
+    { href: '/dashboard/master/prodi', label: 'Data Prodi', icon: GraduationCap, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI'] },
+    { href: '/dashboard/master/instansi', label: 'Data Instansi', icon: Building2, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI', 'ADMINKEMAHASISWAAN'] },
+    // Kemahasiswaan
+    { href: '/dashboard/kemahasiswaan/lomba', label: 'Info Lomba', icon: Award, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI', 'ADMINKEMAHASISWAAN'] },
+    { href: '/dashboard/kemahasiswaan/kegiatan', label: 'Info Kegiatan', icon: Calendar, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI', 'ADMINKEMAHASISWAAN'] },
+    { href: '/dashboard/kemahasiswaan/loker', label: 'Info Loker', icon: Building2, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI', 'ADMINKEMAHASISWAAN', 'INSTANSI'] },
+
+    { href: '/dashboard/master/users', label: 'Users', icon: Users, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI'] },
+    { href: '/dashboard/master/kriteria', label: 'Kriteria Nilai', icon: Award, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI'] },
+    { href: '/dashboard/admin/validasi', label: 'Pendaftaran Magang', icon: FileText, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI'] },
+    { href: '/dashboard/admin/sidang', label: 'Jadwal Sidang', icon: Calendar, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI'] },
+    { href: '/dashboard/admin/rekap', label: 'Rekap Nilai', icon: BookOpen, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI'] },
+    { href: '/dashboard/admin/laporan', label: 'Rekap Laporan', icon: BookOpen, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI'] },
 ];

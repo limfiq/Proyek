@@ -24,6 +24,14 @@ exports.findAll = async (req, res) => {
 exports.create = async (req, res) => {
     try {
         const { username, password, role, profileData } = req.body;
+        const requesterRole = req.userRole;
+
+        // RBAC Hierarchy Check
+        if (['SUPERADMIN', 'ADMINPRODI', 'ADMINKEMAHASISWAAN', 'ADMIN'].includes(role)) {
+            if (requesterRole !== 'SUPERADMIN') {
+                return res.status(403).send({ message: 'Only SUPERADMIN can create admin accounts!' });
+            }
+        }
 
         const existing = await User.findOne({ where: { username } });
         if (existing) return res.status(400).send({ message: 'Username exists' });
@@ -60,6 +68,14 @@ exports.delete = async (req, res) => {
 
         if (!user) return res.status(404).send({ message: 'User not found' });
 
+        // RBAC Hierarchy Check for Delete
+        const requesterRole = req.userRole;
+        if (['SUPERADMIN', 'ADMINPRODI', 'ADMINKEMAHASISWAAN', 'ADMIN'].includes(user.role)) {
+            if (requesterRole !== 'SUPERADMIN') {
+                return res.status(403).send({ message: 'Only SUPERADMIN can delete admin accounts!' });
+            }
+        }
+
         // Manual Cascade Delete
         if (user.role === 'MAHASISWA' && user.mahasiswa) {
             // Delete Pendaftaran first
@@ -88,6 +104,14 @@ exports.update = async (req, res) => {
     try {
         const { id } = req.params;
         const { username, password, role, profileData } = req.body;
+        const requesterRole = req.userRole;
+
+        // Prevent updating roles to Admin if not Superadmin
+        if (role && ['SUPERADMIN', 'ADMINPRODI', 'ADMINKEMAHASISWAAN', 'ADMIN'].includes(role)) {
+            if (requesterRole !== 'SUPERADMIN') {
+                return res.status(403).send({ message: 'Only SUPERADMIN can assign admin roles!' });
+            }
+        }
 
         const user = await User.findByPk(id);
         if (!user) return res.status(404).send({ message: 'User not found' });

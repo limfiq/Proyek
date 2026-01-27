@@ -6,6 +6,7 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             Instansi.belongsTo(models.User, { foreignKey: 'userId', as: 'user' });
             Instansi.hasMany(models.Pendaftaran, { foreignKey: 'instansiId', as: 'pkl' });
+            Instansi.hasMany(models.Loker, { foreignKey: 'instansiId', as: 'loker' });
         }
     }
     Instansi.init({

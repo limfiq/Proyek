@@ -22,7 +22,7 @@ export default function LowonganPage() {
 
     const fetchVacancies = async () => {
         try {
-            const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.limfiq.my.id';
+            const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
             const res = await fetch(`${baseUrl}/api/public/lowongan`);
             const data = await res.json();
             if (Array.isArray(data)) {

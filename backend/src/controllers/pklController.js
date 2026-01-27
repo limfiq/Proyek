@@ -109,9 +109,9 @@ exports.myPendaftaran = async (req, res) => {
         console.log('Fetching pendaftaran for mhsId:', user.mahasiswa.id);
         const pendaftaran = await Pendaftaran.findAll({
             where: { mahasiswaId: user.mahasiswa.id },
-            include: ['instansi', 'pembimbing', 'periode', 'sidang']
+            include: ['instansi', 'pembimbing', 'periode', 'sidang', 'loker']
         });
-        console.log('Pendaftaran found:', pendaftaran.length);
+        console.log('Pendaftaran found:', JSON.stringify(pendaftaran, null, 2));
 
         res.send(pendaftaran);
     } catch (err) {
@@ -249,10 +249,18 @@ exports.validatePendaftaran = async (req, res) => {
 
 exports.getUjian = async (req, res) => {
     try {
+        console.log('getUjian called for userId:', req.userId);
         const userId = req.userId;
         const user = await User.findByPk(userId, { include: ['dosen'] });
 
-        if (!user || !user.dosen) return res.status(403).json({ message: 'Only Dosen' });
+        console.log('User found:', user ? user.username : 'null');
+
+        if (!user || !user.dosen) {
+            console.log('User or Dosen profile missing');
+            return res.status(403).json({ message: 'Only Dosen' });
+        }
+
+        console.log('Dosen ID:', user.dosen.id);
 
         // Find Sidang where dosenPengujiId is user.dosen.id
         const sidang = await db.Sidang.findAll({
@@ -301,6 +309,7 @@ exports.getUjian = async (req, res) => {
 
         res.send(data);
     } catch (err) {
+        console.error('CRASH in getUjian:', err);
         res.status(500).send({ message: err.message });
     }
 };
