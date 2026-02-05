@@ -1,19 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Upload } from 'lucide-react';
+import { FileText, Upload, Camera, MapPin, RefreshCw } from 'lucide-react';
 import { Pagination } from '@/components/ui/pagination';
 import api from '@/lib/api';
 import { motion } from 'framer-motion';
+import Webcam from 'react-webcam';
 
 export default function LaporanPage() {
     const [activeTab, setActiveTab] = useState('harian');
     const [harianList, setHarianList] = useState([]);
     const [pendaftaran, setPendaftaran] = useState(null);
-    const [formHarian, setFormHarian] = useState({ tanggal: '', kegiatan: '' });
+    const [formHarian, setFormHarian] = useState({ tanggal: '', kegiatan: '', lokasi: '' });
+    const [fotoFile, setFotoFile] = useState(null);
+    const [showCamera, setShowCamera] = useState(false);
+    const webcamRef = useRef(null);
+
     const [formTengah, setFormTengah] = useState({ fileUrl: '' });
     const [formAkhir, setFormAkhir] = useState({ fileUrl: '', finalUrl: '' });
     const [mingguanList, setMingguanList] = useState([]);
@@ -86,20 +91,61 @@ export default function LaporanPage() {
         }
     };
 
+    const handleCapture = () => {
+        const imageSrc = webcamRef.current.getScreenshot();
+        if (imageSrc) {
+            // Convert base64 to blob
+            fetch(imageSrc)
+                .then(res => res.blob())
+                .then(blob => {
+                    const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+                    setFotoFile(file);
+                    setShowCamera(false);
+                });
+        }
+    };
+
+    const handleLocation = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const loc = `${position.coords.latitude}, ${position.coords.longitude}`;
+                setFormHarian(prev => ({ ...prev, lokasi: loc }));
+            }, (error) => {
+                alert("Gagal mengambil lokasi: " + error.message);
+            });
+        } else {
+            alert("Geolocation tidak didukung browser ini.");
+        }
+    };
+
     const handleSubmitHarian = async (e) => {
         e.preventDefault();
         if (!pendaftaran) return;
         setLoading(true);
+
+        const formData = new FormData();
+        formData.append('pendaftaranId', pendaftaran.id);
+        formData.append('tanggal', formHarian.tanggal);
+        formData.append('kegiatan', formHarian.kegiatan);
+        formData.append('lokasi', formHarian.lokasi);
+        if (fotoFile) {
+            formData.append('foto', fotoFile);
+        }
+
         try {
-            await api.post('/api/laporan/harian', {
-                pendaftaranId: pendaftaran.id,
-                ...formHarian
+            const token = localStorage.getItem('token');
+            await api.post('/api/laporan/harian', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'Authorization': `Bearer ${token}` // Ensure token is passed if interceptor misses multipart
+                }
             });
             setMessage('Laporan harian disimpan!');
             loadHarian(pendaftaran.id);
-            setFormHarian({ tanggal: '', kegiatan: '' });
+            setFormHarian({ tanggal: '', kegiatan: '', lokasi: '' });
+            setFotoFile(null);
         } catch (err) {
-            alert(err.message);
+            alert(err.message || 'Gagal menyimpan laporan');
         } finally {
             setLoading(false);
         }
@@ -237,8 +283,67 @@ export default function LaporanPage() {
                                             required
                                         />
                                     </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Lokasi</label>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                value={formHarian.lokasi}
+                                                readOnly
+                                                placeholder="Koordinat lokasi..."
+                                                className="bg-gray-50"
+                                            />
+                                            <Button type="button" variant="outline" size="icon" onClick={handleLocation} title="Ambil Lokasi">
+                                                <MapPin className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Foto Kegiatan</label>
+                                        {showCamera ? (
+                                            <div className="rounded-md overflow-hidden border">
+                                                <Webcam
+                                                    audio={false}
+                                                    ref={webcamRef}
+                                                    screenshotFormat="image/jpeg"
+                                                    className="w-full"
+                                                />
+                                                <div className="p-2 bg-gray-100 flex justify-center gap-2">
+                                                    <Button type="button" size="sm" onClick={handleCapture}>Ambil Foto</Button>
+                                                    <Button type="button" size="sm" variant="ghost" onClick={() => setShowCamera(false)}>Batal</Button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col gap-2">
+                                                {fotoFile ? (
+                                                    <div className="relative w-full h-48 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
+                                                        <img src={URL.createObjectURL(fotoFile)} alt="Preview" className="h-full object-contain" />
+                                                        <Button
+                                                            type="button"
+                                                            variant="destructive"
+                                                            size="xs"
+                                                            className="absolute top-2 right-2"
+                                                            onClick={() => setFotoFile(null)}
+                                                        >
+                                                            Hapus
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <div
+                                                        className="w-full h-32 border-2 border-dashed rounded-md flex flex-col items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-50 hover:border-blue-300 transition-colors"
+                                                        onClick={() => setShowCamera(true)}
+                                                    >
+                                                        <Camera className="h-8 w-8 mb-2" />
+                                                        <span className="text-xs">Klik untuk ambil foto</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
                                     <Button type="submit" className="w-full" disabled={loading}>
-                                        Simpan Laporan
+                                        {loading ? 'Menyimpan...' : 'Simpan Laporan'}
                                     </Button>
                                 </form>
                             </CardContent>
@@ -253,11 +358,23 @@ export default function LaporanPage() {
                                             <div>
                                                 <p className="font-bold text-gray-800">{item.tanggal}</p>
                                                 <p className="text-sm text-gray-600 mt-1">{item.kegiatan}</p>
+                                                {item.lokasi && (
+                                                    <div className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                                                        <MapPin className="h-3 w-3" /> {item.lokasi}
+                                                    </div>
+                                                )}
                                                 {item.feedback && <p className="text-xs text-orange-600 mt-2 bg-orange-50 p-2 rounded">Komentar Pembimbing: {item.feedback}</p>}
                                             </div>
-                                            <span className={`text-xs px-2 py-1 rounded-full ${item.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                                                {item.status}
-                                            </span>
+                                            <div className="flex flex-col items-end gap-2">
+                                                <span className={`text-xs px-2 py-1 rounded-full ${item.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                                                    {item.status}
+                                                </span>
+                                                {item.foto && (
+                                                    <a href={`${process.env.NEXT_PUBLIC_API_URL}${item.foto}`} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline flex items-center mt-1">
+                                                        <Camera className="h-3 w-3 mr-1" /> FOTO
+                                                    </a>
+                                                )}
+                                            </div>
                                         </div>
                                     </CardContent>
                                 </Card>

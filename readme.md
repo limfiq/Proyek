@@ -153,3 +153,50 @@ Tombol export terletak di bagian header atau filter area pada masing-masing hala
 - **Layout**: Sidebar navigation responsive + Topbar dengan User Dropdown.
 - **Export Lib**: `lib/exportUtils.js` (Wrapper untuk `xlsx` dan `jspdf`).
 - **UI**: Radix UI (Sheet, DropdownMenu, etc) + Tailwind CSS.
+
+
+Panduan Setup Google Drive API untuk Logbook
+Untuk mengaktifkan fitur upload foto ke Google Drive, Anda perlu mengatur Google Cloud Console dan mendapatkan Service Account Key.
+
+Langkah 1: Buat Project & Enable API
+Buka Google Cloud Console.
+Buat Project Baru (misal: Sidemi Logbook).
+Buka menu APIs & Services > Library.
+Cari "Google Drive API" dan klik Enable.
+Langkah 2: Buat Service Account
+Buka menu APIs & Services > Credentials.
+Klik + CREATE CREDENTIALS > Service Account.
+Isi nama (misal: logbook-uploader) dan klik Create.
+(Opsional) Pada langkah "Grant this service account access to project", Anda bisa pilih role Editor atau lewati saja (kita akan share folder secara spesifik nanti).
+Klik Done.
+Langkah 3: Generate JSON Key
+Di daftar Service Accounts, klik pada email service account yang baru dibuat (contoh: logbook-uploader@sidemi-logbook.iam.gserviceaccount.com).
+Masuk ke tab Keys.
+Klik Add Key > Create new key.
+Pilih JSON lalu klik Create.
+File JSON akan terdownload otomatis.
+Rename file tersebut menjadi service-account-key.json.
+Pindahkan file ini ke folder: 
+…/GitHub/Proyek/backend/service-account-key.json
+.
+Langkah 4: Siapkan Folder Google Drive
+Buka Google Drive Anda (gunakan akun Gmail/Workspace biasa).
+Buat Folder Baru (misal: Logbook Uploads).
+Buka folder tersebut. Perhatikan URL-nya di browser.
+URL: https://drive.google.com/drive/folders/1aBcDeFgHiJkLmNoPqRsTuVwXyZ
+Folder ID adalah bagian terakhir: 1aBcDeFgHiJkLmNoPqRsTuVwXyZ.
+Salin Folder ID ini.
+Langkah 5: Beri Akses ke Service Account
+Klik kanan folder Logbook Uploads > Share.
+Di kolom "Add people", masukkan email service account tadi (yang berakhiran @...gserviceaccount.com).
+Pastikan role-nya adalah Editor.
+Klik Send (hilangkan centang "Notify people" jika ada, karena ini bot).
+Langkah 6: Konfigurasi Backend
+Buka file 
+.env
+ di folder backend.
+Tambahkan atau update baris berikut:
+env
+GOOGLE_DRIVE_FOLDER_ID=paste_folder_id_disini
+Restart server backend (npm run dev).
+Selesai! Sekarang aplikasi akan mengupload foto logbook ke folder tersebut.

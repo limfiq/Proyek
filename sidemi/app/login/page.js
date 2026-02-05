@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import api from '@/lib/api';
 import { Lock, User } from 'lucide-react';
@@ -87,6 +88,13 @@ export default function LoginPage() {
                             <Button type="submit" className="w-full" disabled={loading}>
                                 {loading ? 'Logging in...' : 'Sign In'}
                             </Button>
+
+                            <div className="text-center text-sm mt-4">
+                                <span className="text-muted-foreground">Belum punya akun? </span>
+                                <Link href="/auth/register" className="text-primary hover:underline font-medium">
+                                    Aktivasi Mahasiswa
+                                </Link>
+                            </div>
                         </form>
                     </CardContent>
                 </Card>

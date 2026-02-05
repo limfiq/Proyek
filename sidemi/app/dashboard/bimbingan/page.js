@@ -225,6 +225,14 @@ export default function BimbinganPage() {
                                                 <div>
                                                     <p className="font-bold text-sm">{l.tanggal}</p>
                                                     <p className="text-sm mt-1">{l.kegiatan}</p>
+                                                    {l.lokasi && <p className="text-xs text-gray-500 mt-1">📍 {l.lokasi}</p>}
+                                                    {l.foto && (
+                                                        <div className="mt-2">
+                                                            <a href={l.foto} target="_blank" rel="noreferrer" className="text-blue-600 text-xs underline">
+                                                                Lihat Foto
+                                                            </a>
+                                                        </div>
+                                                    )}
                                                     {l.feedback && <p className="text-xs text-orange-600 mt-1">Komentar: {l.feedback}</p>}
                                                 </div>
                                                 <span className={`text-xs px-2 py-1 rounded-full ${l.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>

@@ -4,13 +4,21 @@ const LaporanTengah = db.LaporanTengah;
 const LaporanAkhir = db.LaporanAkhir;
 const Pendaftaran = db.Pendaftaran;
 
+const googleDriveService = require('../services/googleDriveService');
+
 // Harian
 exports.createHarian = async (req, res) => {
     try {
-        const { pendaftaranId, tanggal, kegiatan } = req.body;
-        // Check ownership logic here ideal
+        const { pendaftaranId, tanggal, kegiatan, lokasi } = req.body;
+        let fotoUrl = null;
+
+        if (req.file) {
+            const uploadResult = await googleDriveService.uploadFile(req.file);
+            fotoUrl = uploadResult.webViewLink; // or webContentLink for direct download
+        }
+
         const laporan = await LaporanHarian.create({
-            pendaftaranId, tanggal, kegiatan, status: 'DRAFT'
+            pendaftaranId, tanggal, kegiatan, lokasi, foto: fotoUrl, status: 'DRAFT'
         });
         res.status(201).send(laporan);
     } catch (err) {

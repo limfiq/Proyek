@@ -19,7 +19,18 @@ const sidangController = require('../controllers/sidangController');
 router.get('/sidang/all', [verifyToken, isAdmin], sidangController.getAllSidang);
 router.post('/sidang/schedule', [verifyToken, isAdmin], sidangController.createSchedule);
 
-router.post('/laporan/harian', verifyToken, laporanController.createHarian);
+const path = require('path');
+const multer = require('multer');
+
+// Configure Multer
+const storage = multer.memoryStorage();
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
+router.post('/laporan/harian', verifyToken, upload.single('foto'), laporanController.createHarian);
 router.get('/laporan/harian', verifyToken, laporanController.listHarian); // ?pendaftaranId=x
 router.put('/laporan/harian/:id/approve', verifyToken, laporanController.approveHarian);
 router.put('/laporan/harian/:id/feedback', verifyToken, laporanController.updateFeedbackHarian);

@@ -8,30 +8,49 @@ const jwt = require('jsonwebtoken');
 
 exports.registerMahasiswa = async (req, res) => {
     try {
-        const { username, password, nim, nama, kelas, angkatan } = req.body;
+        const { username, password, nim, nama } = req.body;
 
-        // Check if user exists
+        // 1. Check if Mahasiswa exists with valid NIM and Name
+        const mahasiswa = await Mahasiswa.findOne({ where: { nim } });
+        if (!mahasiswa) {
+            return res.status(404).json({ message: 'NIM tidak ditemukan dalam sistem.' });
+        }
+
+        // Case insensitive comparison for name could be better, but strict for now or simple match
+        if (mahasiswa.nama.toLowerCase() !== nama.toLowerCase()) {
+            return res.status(400).json({ message: 'Nama tidak sesuai dengan data NIM.' });
+        }
+
+        // 2. Check if already registered (already has a userId)
+        if (mahasiswa.userId) {
+            return res.status(400).json({ message: 'Mahasiswa dengan NIM ini sudah terdaftar.' });
+        }
+
+        // 3. Check if username is taken (standard check)
         const existingUser = await User.findOne({ where: { username } });
         if (existingUser) return res.status(400).json({ message: 'Username already taken' });
 
         const hashedPassword = await bcrypt.hash(password, 8);
 
-        const user = await User.create({
-            username,
-            password: hashedPassword,
-            role: 'MAHASISWA'
+        // 4. Create User
+        // Use a transaction to ensure atomicity
+        const result = await db.sequelize.transaction(async (t) => {
+            const user = await User.create({
+                username,
+                password: hashedPassword,
+                role: 'MAHASISWA'
+            }, { transaction: t });
+
+            // 5. Link User to Mahasiswa
+            mahasiswa.userId = user.id;
+            await mahasiswa.save({ transaction: t });
+
+            return user;
         });
 
-        await Mahasiswa.create({
-            userId: user.id,
-            nim,
-            nama,
-            kelas,
-            angkatan
-        });
-
-        res.status(201).json({ message: 'Mahasiswa registered successfully!' });
+        res.status(201).json({ message: 'Registrasi berhasil! Silakan login.' });
     } catch (error) {
+        console.error("Register Error:", error);
         res.status(500).json({ message: error.message });
     }
 };
