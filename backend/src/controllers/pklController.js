@@ -135,9 +135,15 @@ exports.assignDosen = async (req, res) => {
 
 exports.getBimbingan = async (req, res) => {
     try {
+        console.log('getBimbingan START');
         const userId = req.userId;
         const userRole = req.userRole; // 'DOSEN', 'INSTANSI'
+        console.log(`User ID: ${userId}, Role: ${userRole}`);
+
         const user = await User.findByPk(userId, { include: ['dosen', 'instansi'] });
+        console.log('User found:', user ? user.username : 'null');
+
+        if (!user) return res.status(404).json({ message: 'User not found in getBimbingan' });
 
         let whereClause = {};
         // Define variable to hold the specific ROLE string for KomponenNilai check
@@ -152,67 +158,97 @@ exports.getBimbingan = async (req, res) => {
             whereClause.instansiId = user.instansi.id;
             gradingRole = 'INSTANSI';
         } else {
-            return res.status(403).json({ message: 'Unauthorized' });
+            return res.status(403).json({ message: 'UnauthorizedRole' });
         }
+        console.log('Where clause:', whereClause);
 
         const pendaftarans = await Pendaftaran.findAll({
             where: whereClause,
             include: ['mahasiswa', 'instansi'] // Removed 'dosen' if not needed or add back if needed
         });
+        console.log(`Found ${pendaftarans.length} pendaftarans`);
 
         // Enhance with stats
         const data = await Promise.all(pendaftarans.map(async (p) => {
-            const pId = p.id;
+            try {
+                const pId = p.id;
+                // console.log(`Processing pId: ${pId}`);
 
-            // 1. Logbook Count
-            const logbookCount = await db.LaporanHarian.count({ where: { pendaftaranId: pId } });
+                // 1. Logbook Count
+                const logbookCount = await db.LaporanHarian.count({ where: { pendaftaranId: pId } });
 
-            // 1.5 Mingguan Count
-            const mingguanCount = await db.LaporanMingguan.count({ where: { pendaftaranId: pId } });
+                // 1.5 Mingguan Count
+                let mingguanCount = 0;
+                try {
+                    mingguanCount = await db.LaporanMingguan.count({ where: { pendaftaranId: pId } });
+                } catch (e) {
+                    console.error(`Error counting LaporanMingguan for pId ${pId}:`, e.message);
+                }
 
-            // 2. Laporan Tengah Exists
-            const lapTengah = await db.LaporanTengah.findOne({ where: { pendaftaranId: pId } });
+                // 2. Laporan Tengah Exists
+                let lapTengah = null;
+                try {
+                    lapTengah = await db.LaporanTengah.findOne({ where: { pendaftaranId: pId } });
+                } catch (e) {
+                    console.error(`Error finding LaporanTengah for pId ${pId}:`, e.message);
+                }
 
-            // 3. Laporan Akhir Exists
-            const lapAkhir = await db.LaporanAkhir.findOne({ where: { pendaftaranId: pId } });
+                // 3. Laporan Akhir Exists
+                let lapAkhir = null;
+                try {
+                    lapAkhir = await db.LaporanAkhir.findOne({ where: { pendaftaranId: pId } });
+                } catch (e) {
+                    console.error(`Error finding LaporanAkhir for pId ${pId}:`, e.message);
+                }
 
-            // 4. Grading Status (Has this user graded this student?)
-            // Check based on 'gradingRole'
-            // We check if there is ANY KomponenNilai for this Pendaftaran that is either:
-            // - Created with jenis = gradingRole (Legacy/Direct)
-            // - Created with kriteria.role = gradingRole
+                // 4. Grading Status (Has this user graded this student?)
+                // Check based on 'gradingRole'
+                // We check if there is ANY KomponenNilai for this Pendaftaran that is either:
+                // - Created with jenis = gradingRole (Legacy/Direct)
+                // - Created with kriteria.role = gradingRole
+                let alreadyGraded = false;
+                try {
+                    const relevantGrades = await db.KomponenNilai.findAll({
+                        where: { pendaftaranId: pId },
+                        include: [{ model: db.KriteriaNilai, as: 'kriteria' }]
+                    });
 
-            const relevantGrades = await db.KomponenNilai.findAll({
-                where: { pendaftaranId: pId },
-                include: [{ model: db.KriteriaNilai, as: 'kriteria' }]
-            });
+                    alreadyGraded = relevantGrades.some(g => {
+                        if (g.jenis === gradingRole) return true;
+                        if (g.kriteria && g.kriteria.role === gradingRole) return true;
+                        return false;
+                    });
+                } catch (e) {
+                    console.error(`Error checking grades for pId ${pId}:`, e.message);
+                }
 
-            const alreadyGraded = relevantGrades.some(g => {
-                if (g.jenis === gradingRole) return true;
-                if (g.kriteria && g.kriteria.role === gradingRole) return true;
-                return false;
-            });
-
-            return {
-                id: p.id,
-                mahasiswa: p.mahasiswa,
-                instansi: p.instansi,
-                tipe: p.tipe,
-                judulProject: p.judulProject,
-                stats: {
-                    logbookCount,
-                    mingguanCount,
-                    hasLaporanTengah: !!lapTengah,
-                    hasLaporanAkhir: !!lapAkhir
-                },
-                alreadyGraded
-            };
+                return {
+                    id: p.id,
+                    mahasiswa: p.mahasiswa,
+                    instansi: p.instansi,
+                    tipe: p.tipe,
+                    judulProject: p.judulProject,
+                    stats: {
+                        logbookCount,
+                        mingguanCount,
+                        hasLaporanTengah: !!lapTengah,
+                        hasLaporanAkhir: !!lapAkhir
+                    },
+                    alreadyGraded
+                };
+            } catch (innerErr) {
+                console.error(`Error processing pId ${p.id}:`, innerErr);
+                return {
+                    id: p.id,
+                    error: innerErr.message
+                };
+            }
         }));
 
         res.send(data);
     } catch (err) {
-        console.error("getBimbingan Error:", err);
-        res.status(500).send({ message: err.message });
+        console.error("getBimbingan CRITICAL Error:", err);
+        res.status(500).send({ message: err.message, stack: err.stack });
     }
 };
 
