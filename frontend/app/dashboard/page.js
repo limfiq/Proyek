@@ -13,6 +13,7 @@ export default function DashboardPage() {
     const [stats, setStats] = useState(null);
     const [studentSidang, setStudentSidang] = useState(null);
     const [pendaftaranData, setPendaftaranData] = useState(null);
+    const [jadwalData, setJadwalData] = useState([]);
 
     const formatDate = (dateString) => {
         if (!dateString) return '-';
@@ -29,6 +30,7 @@ export default function DashboardPage() {
         if (userRole) {
             setRole(userRole);
             fetchStats();
+            fetchJadwal();
             if (userRole === 'MAHASISWA') {
                 fetchStudentData();
             }
@@ -68,6 +70,15 @@ export default function DashboardPage() {
         try {
             const res = await api.get('/api/pkl/stats');
             setStats(res.data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const fetchJadwal = async () => {
+        try {
+            const res = await api.get('/api/jadwal');
+            setJadwalData(res.data);
         } catch (err) {
             console.error(err);
         }
@@ -169,6 +180,48 @@ export default function DashboardPage() {
                             </CardContent>
                         </Card>
                     </div>
+
+                    {/* Jadwal Widget for Student */}
+                    <Card className="mt-6 border-l-4 border-l-indigo-600">
+                        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle className="text-lg font-bold">Jadwal Mendatang</CardTitle>
+                                <CardDescription>Agenda kegiatan magang/PKL yang akan datang</CardDescription>
+                            </div>
+                            <div className="bg-indigo-50 p-2 rounded-full">
+                                <Calendar className="h-5 w-5 text-indigo-600" />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {jadwalData
+                                    .filter(item => item.kategori === 'GENERAL' || (pendaftaranData && item.kategori === pendaftaranData.tipe))
+                                    .filter(item => new Date(item.tanggal) >= new Date().setHours(0, 0, 0, 0))
+                                    .slice(0, 5)
+                                    .map((item) => (
+                                        <div key={item.id} className="flex items-center gap-4 p-3 rounded-lg border bg-gray-50/50 hover:bg-white transition-colors">
+                                            <div className="flex flex-col items-center justify-center min-w-[60px] p-2 bg-indigo-600 text-white rounded-md shadow-sm">
+                                                <span className="text-[10px] uppercase font-bold text-indigo-100">{new Date(item.tanggal).toLocaleDateString('id-ID', { month: 'short' })}</span>
+                                                <span className="text-xl font-black leading-none">{new Date(item.tanggal).getDate()}</span>
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="font-bold text-gray-900 leading-tight">{item.namaKegiatan}</h4>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item.kategori === 'GENERAL' ? 'bg-gray-200 text-gray-600' : 'bg-indigo-100 text-indigo-700'
+                                                        }`}>
+                                                        {item.kategori}
+                                                    </span>
+                                                    <span className="text-xs text-gray-500">{formatDate(item.tanggal)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                {jadwalData.filter(item => item.kategori === 'GENERAL' || (pendaftaranData && item.kategori === pendaftaranData.tipe)).length === 0 && (
+                                    <p className="text-center text-gray-500 py-4 italic text-sm">Belum ada jadwal kegiatan mendatang.</p>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
 
                     {/* Detailed Logbook Stats for MAHASISWA */}
                     {stats && stats.logbookStats && (
@@ -286,66 +339,107 @@ export default function DashboardPage() {
                         </Card>
                     </div>
 
-                    {stats.logbookStats && (
-                        /* existing logbook stats cards */
-                        <div className="grid gap-4 md:grid-cols-2">
-                            {/* ... same daily/weekly cards ... */}
-                        </div>
-                    )}
-
-                    {/* [NEW] Supervised Students List */}
-                    {stats.bimbinganList && stats.bimbinganList.length > 0 && (
-                        <Card className="border-t-4 border-t-green-600">
-                            <CardHeader>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <CardTitle>Mahasiswa Bimbingan</CardTitle>
-                                        <CardDescription>Daftar mahasiswa yang Anda bimbing periode ini.</CardDescription>
-                                    </div>
-                                    <Users className="h-5 w-5 text-green-600" />
+                    <div className="grid gap-6 md:grid-cols-3 mt-6">
+                        {/* Jadwal Widget for Lecturer */}
+                        <Card className="md:col-span-1 border-l-4 border-l-indigo-600">
+                            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg font-bold">Agenda Kegiatan</CardTitle>
+                                    <CardDescription>Jadwal umum program magang</CardDescription>
                                 </div>
+                                <Calendar className="h-5 w-5 text-indigo-600" />
                             </CardHeader>
                             <CardContent>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead>
-                                            <tr className="border-b text-left text-muted-foreground uppercase text-[10px] font-bold">
-                                                <th className="pb-2">Nama / NIM</th>
-                                                <th className="pb-2">Instansi</th>
-                                                <th className="pb-2 text-right">Kontak</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y">
-                                            {stats.bimbinganList.map((mhs) => (
-                                                <tr key={mhs.id} className="hover:bg-slate-50 transition-colors">
-                                                    <td className="py-3">
-                                                        <div className="font-bold text-gray-900">{mhs.nama}</div>
-                                                        <div className="text-[10px] text-muted-foreground font-mono">{mhs.nim}</div>
-                                                    </td>
-                                                    <td className="py-3 text-xs text-slate-600">{mhs.instansi || '-'}</td>
-                                                    <td className="py-3 text-right">
-                                                        {mhs.noHp ? (
-                                                            <a
-                                                                href={`https://wa.me/${mhs.noHp.replace(/\D/g, '')}`}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="inline-flex items-center gap-1 px-2 py-1 rounded bg-green-100 text-green-700 text-[10px] font-bold hover:bg-green-200"
-                                                            >
-                                                                <Phone className="h-3 w-3" />
-                                                                {mhs.noHp}
-                                                            </a>
-                                                        ) : (
-                                                            <span className="text-[10px] text-gray-400 italic">No contact</span>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                <div className="space-y-3">
+                                    {jadwalData
+                                        .filter(item => new Date(item.tanggal) >= new Date().setHours(0, 0, 0, 0))
+                                        .slice(0, 3)
+                                        .map((item) => (
+                                            <div key={item.id} className="flex items-start gap-3 p-2.5 rounded-lg border bg-white shadow-sm">
+                                                <div className="flex flex-col items-center justify-center min-w-[45px] py-1.5 bg-indigo-50 text-indigo-700 rounded-md border border-indigo-100">
+                                                    <span className="text-[9px] uppercase font-black">{new Date(item.tanggal).toLocaleDateString('id-ID', { month: 'short' })}</span>
+                                                    <span className="text-base font-black leading-none">{new Date(item.tanggal).getDate()}</span>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="font-bold text-sm text-gray-900 truncate">{item.namaKegiatan}</h4>
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        <span className="text-[9px] font-bold px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded uppercase tracking-tighter">{item.kategori}</span>
+                                                        <span className="text-[10px] text-gray-500">{formatDate(item.tanggal)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    {jadwalData.length === 0 && (
+                                        <p className="text-center text-gray-500 py-4 italic text-sm">Belum ada agenda kegiatan.</p>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
-                    )}
+
+                        {/* Existing Logbook Stats wrapping inside grid */}
+                        <div className="md:col-span-2 space-y-6">
+                            {stats.logbookStats && (
+                                /* existing logbook stats cards */
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    {/* ... same daily/weekly cards ... */}
+                                </div>
+                            )}
+
+                            {/* [NEW] Supervised Students List */}
+                            {stats.bimbinganList && stats.bimbinganList.length > 0 && (
+                                <Card className="border-t-4 border-t-green-600">
+                                    <CardHeader>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <CardTitle>Mahasiswa Bimbingan</CardTitle>
+                                                <CardDescription>Daftar mahasiswa yang Anda bimbing periode ini.</CardDescription>
+                                            </div>
+                                            <Users className="h-5 w-5 text-green-600" />
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-sm">
+                                                <thead>
+                                                    <tr className="border-b text-left text-muted-foreground uppercase text-[10px] font-bold">
+                                                        <th className="pb-2">Nama / NIM</th>
+                                                        <th className="pb-2">Instansi</th>
+                                                        <th className="pb-2 text-right">Kontak</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y">
+                                                    {stats.bimbinganList.map((mhs) => (
+                                                        <tr key={mhs.id} className="hover:bg-slate-50 transition-colors">
+                                                            <td className="py-3">
+                                                                <div className="font-bold text-gray-900">{mhs.nama}</div>
+                                                                <div className="text-[10px] text-muted-foreground font-mono">{mhs.nim}</div>
+                                                            </td>
+                                                            <td className="py-3 text-xs text-slate-600">{mhs.instansi || '-'}</td>
+                                                            <td className="py-3 text-right">
+                                                                {mhs.noHp ? (
+                                                                    <a
+                                                                        href={`https://wa.me/${mhs.noHp.replace(/\D/g, '')}`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="inline-flex items-center gap-1 px-2 py-1 rounded bg-green-100 text-green-700 text-[10px] font-bold hover:bg-green-200"
+                                                                    >
+                                                                        <Phone className="h-3 w-3" />
+                                                                        {mhs.noHp}
+                                                                    </a>
+                                                                ) : (
+                                                                    <span className="text-[10px] text-gray-400 italic">No contact</span>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
+                    </div>
                 </div>
             );
         }

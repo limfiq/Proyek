@@ -6,6 +6,7 @@ const userController = require('../controllers/userController');
 const kriteriaController = require('../controllers/kriteriaController');
 const kemahasiswaanController = require('../controllers/kemahasiswaanController');
 const lokerController = require('../controllers/lokerController');
+const jadwalController = require('../controllers/jadwalController');
 const { verifyToken, isAdmin, isContentManager } = require('../middleware/authMiddleware');
 
 // Periode Routes
@@ -67,5 +68,11 @@ router.delete('/loker/:id', [verifyToken, canManageLoker], lokerController.delet
 router.post('/loker/apply', verifyToken, lokerController.apply);
 router.get('/loker/:id/applicants', [verifyToken, canManageLoker], lokerController.getApplicants);
 router.put('/loker/application/:id', [verifyToken, canManageLoker], lokerController.updateApplicationStatus);
+
+// Jadwal Routes
+router.get('/jadwal', verifyToken, jadwalController.findAll);
+router.post('/jadwal', [verifyToken, isAdmin], jadwalController.create);
+router.put('/jadwal/:id', [verifyToken, isAdmin], jadwalController.update);
+router.delete('/jadwal/:id', [verifyToken, isAdmin], jadwalController.delete);
 
 module.exports = router;
