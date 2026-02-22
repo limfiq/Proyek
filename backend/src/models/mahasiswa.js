@@ -29,6 +29,10 @@ module.exports = (sequelize, DataTypes) => {
         },
         kelas: DataTypes.STRING,
         angkatan: DataTypes.STRING,
+        noHp: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
         prodiId: DataTypes.INTEGER
     }, {
         sequelize,

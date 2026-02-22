@@ -10,8 +10,8 @@ exports.findAll = async (req, res) => {
         const users = await User.findAll({
             attributes: ['id', 'username', 'role', 'createdAt'],
             include: [
-                { model: Mahasiswa, as: 'mahasiswa', attributes: ['id', 'nama', 'nim', 'kelas', 'angkatan', 'prodiId'], include: [{ model: db.Prodi, as: 'prodi', attributes: ['id', 'nama', 'jenjang'] }] },
-                { model: Dosen, as: 'dosen', attributes: ['id', 'nama', 'nidn'] },
+                { model: Mahasiswa, as: 'mahasiswa', attributes: ['id', 'nama', 'nim', 'kelas', 'angkatan', 'noHp', 'prodiId'], include: [{ model: db.Prodi, as: 'prodi', attributes: ['id', 'nama', 'jenjang'] }] },
+                { model: Dosen, as: 'dosen', attributes: ['id', 'nama', 'nidn', 'noHp'] },
                 { model: Instansi, as: 'instansi', attributes: ['id', 'nama'] }
             ]
         });

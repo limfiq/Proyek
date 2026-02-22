@@ -53,11 +53,11 @@ exports.getSummary = async (req, res) => {
         let finalScore = 0;
         if (pendaftaran.tipe === 'PKL1') {
             finalScore = (scores.HARIAN * 0.3) + (scores.PEMBIMBING * 0.3) + (scores.PENGUJI * 0.2) + (scores.INSTANSI * 0.2);
-        } else if (pendaftaran.tipe === 'MBKM') {
-            // MBKM: Logbook 25%, Monev 20%, Pembimbing 20%, Instansi 20%, Penguji 15%
+        } else if (pendaftaran.tipe === 'MBKM' || pendaftaran.tipe === 'MBKM2') {
+            // MBKM & MBKM 2: Logbook 25%, Monev 20%, Pembimbing 20%, Instansi 20%, Penguji 15%
             finalScore = (scores.LOGBOOK * 0.25) + (scores.MONEV * 0.20) + (scores.PEMBIMBING * 0.20) + (scores.INSTANSI * 0.20) + (scores.PENGUJI * 0.15);
         } else {
-            // PKL 2
+            // Magang 2
             finalScore = (scores.HARIAN * 0.3) + (scores.PEMBIMBING * 0.3) + (scores.PENGUJI * 0.25) + (scores.INSTANSI * 0.15);
         }
 
@@ -174,11 +174,11 @@ exports.getRecap = async (req, res) => {
 
             if (p.tipe === 'PKL1') {
                 finalScore = (scores.LOGBOOK * 0.25) + (scores.MONEV * 0.20) + (scores.PEMBIMBING * 0.25) + (scores.PENGUJI * 0.10) + (scores.INSTANSI * 0.20);
-            } else if (p.tipe === 'MBKM') {
+            } else if (p.tipe === 'MBKM' || p.tipe === 'MBKM2') {
                 // MBKM: Logbook 25%, Monev 20%, Pembimbing 20%, Instansi 20%, Penguji 15%
                 finalScore = (scores.LOGBOOK * 0.25) + (scores.MONEV * 0.20) + (scores.PEMBIMBING * 0.20) + (scores.INSTANSI * 0.20) + (scores.PENGUJI * 0.15);
             } else {
-                // PKL 2 (Assuming default or explicit PKL2 check)
+                // PKL 2
                 finalScore = (scores.LOGBOOK * 0.25) + (scores.MONEV * 0.20) + (scores.PEMBIMBING * 0.25) + (scores.PENGUJI * 0.20) + (scores.INSTANSI * 0.10);
             }
 

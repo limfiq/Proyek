@@ -65,8 +65,8 @@ export default function LandingPage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="pt-32 pb-24 px-4 bg-gradient-to-br from-blue-50 via-white to-blue-50/50 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-1/3 h-full bg-blue-100/30 skew-x-12 transform origin-top-right z-0"></div>
+      <section className="pt-32 pb-24 px-4 bg-gradient-to-br from-[#083D77]/5 via-white to-[#083D77]/10 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-1/3 h-full bg-[#083D77]/5 skew-x-12 transform origin-top-right z-0"></div>
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <motion.h1
@@ -109,7 +109,7 @@ export default function LandingPage() {
                   placeholder="Lokasi (cth: Jakarta)"
                 />
               </div>
-              <Button className="h-12 rounded-full px-8 bg-primary hover:bg-blue-700">
+              <Button className="h-12 rounded-full px-8 bg-primary hover:bg-[#1D487B]">
                 Cari
               </Button>
             </motion.div>
@@ -154,7 +154,7 @@ export default function LandingPage() {
               <p className="text-gray-600">Jelajahi kesempatan magang yang baru ditambahkan minggu ini.</p>
             </div>
             <Link href="/lowongan">
-              <Button variant="outline" className="hidden sm:flex text-primary border-primary hover:bg-blue-50">
+              <Button variant="outline" className="hidden sm:flex text-primary border-primary hover:bg-[#083D77]/5">
                 Lihat Semua <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
@@ -256,7 +256,7 @@ export default function LandingPage() {
 
       {/* CTA Section */}
       <section className="py-20 px-4">
-        <div className="max-w-6xl mx-auto bg-gradient-to-r from-primary to-blue-600 rounded-3xl p-12 md:p-20 text-center text-white relative overflow-hidden shadow-2xl">
+        <div className="max-w-6xl mx-auto bg-gradient-to-r from-primary to-[#1D487B] rounded-3xl p-12 md:p-20 text-center text-white relative overflow-hidden shadow-2xl">
           <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-48 -mt-48"></div>
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -ml-48 -mb-48"></div>
 

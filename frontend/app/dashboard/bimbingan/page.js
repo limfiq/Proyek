@@ -63,8 +63,9 @@ export default function BimbinganPage() {
         setCurrentPage(1); // Reset page on filter change
     }, [selectedPeriode, students]);
 
-    const [feedback, setFeedback] = useState('');
-    const [signedFileUrl, setSignedFileUrl] = useState('');
+    const [logbookFeedback, setLogbookFeedback] = useState({}); // [NEW]
+    const [mingguanFeedback, setMingguanFeedback] = useState({}); // [NEW]
+    const [mingguanSignedFileUrl, setMingguanSignedFileUrl] = useState({}); // [NEW]
 
     const [showLogbook, setShowLogbook] = useState(null);
     const [logbooks, setLogbooks] = useState([]);
@@ -84,17 +85,21 @@ export default function BimbinganPage() {
 
     const approveMingguan = async (id, status = 'APPROVED') => {
         try {
-            // Include signedFileUrl or feedback if provided
+            const currentSigned = mingguanSignedFileUrl[id] || '';
+            const currentFeedback = mingguanFeedback[id] || '';
+
             const payload = { status };
-            if (signedFileUrl) payload.signedFileUrl = signedFileUrl;
-            if (feedback) payload.feedback = feedback; // Use specific feedback state for mingguan if needed, or shared
+            if (currentSigned) payload.signedFileUrl = currentSigned;
+            if (currentFeedback) payload.feedback = currentFeedback;
 
             await api.put(`/api/laporan/mingguan/${id}/approve`, payload);
             // Refresh mingguan
-            const updated = mingguanList.map(l => l.id === id ? { ...l, status, signedFileUrl: signedFileUrl || l.signedFileUrl, feedback: feedback || l.feedback } : l);
+            const updated = mingguanList.map(l => l.id === id ? { ...l, status, signedFileUrl: currentSigned || l.signedFileUrl, feedback: currentFeedback || l.feedback } : l);
             setMingguanList(updated);
-            setSignedFileUrl('');
-            setFeedback(''); // Reset shared feedback
+
+            // Clear specific entry state
+            setMingguanSignedFileUrl(prev => ({ ...prev, [id]: '' }));
+            setMingguanFeedback(prev => ({ ...prev, [id]: '' }));
         } catch (err) {
             alert('Gagal update status');
         }
@@ -112,11 +117,12 @@ export default function BimbinganPage() {
 
     const approveLogbook = async (id, status = 'APPROVED') => {
         try {
-            await api.put(`/api/laporan/harian/${id}/approve`, { status, feedback: feedback });
+            const currentFeedback = logbookFeedback[id] || '';
+            await api.put(`/api/laporan/harian/${id}/approve`, { status, feedback: currentFeedback });
             // Refresh logbooks
-            const updated = logbooks.map(l => l.id === id ? { ...l, status, feedback: feedback || l.feedback } : l);
+            const updated = logbooks.map(l => l.id === id ? { ...l, status, feedback: currentFeedback || l.feedback } : l);
             setLogbooks(updated);
-            setFeedback('');
+            setLogbookFeedback(prev => ({ ...prev, [id]: '' }));
         } catch (err) {
             alert('Gagal update status logbook');
         }
@@ -303,10 +309,13 @@ export default function BimbinganPage() {
                                         if (selectedWeek !== 'ALL' && startDate) {
                                             filteredLogbooks = logbooks.filter(l => {
                                                 const logDate = new Date(l.tanggal);
+                                                logDate.setHours(0, 0, 0, 0);
                                                 const start = new Date(startDate);
-                                                const diffTime = Math.abs(logDate - start);
-                                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                                                const weekNum = Math.ceil(diffDays / 7);
+                                                start.setHours(0, 0, 0, 0);
+
+                                                const diffTime = logDate - start;
+                                                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                                const weekNum = Math.floor(diffDays / 7) + 1;
                                                 return String(weekNum) === String(selectedWeek);
                                             });
                                         }
@@ -340,8 +349,8 @@ export default function BimbinganPage() {
                                                             type="text"
                                                             placeholder="Beri komentar / Catatan Revisi"
                                                             className="flex-1 text-sm p-2 border rounded"
-                                                            value={feedback}
-                                                            onChange={(e) => setFeedback(e.target.value)}
+                                                            value={logbookFeedback[l.id] || ''}
+                                                            onChange={(e) => setLogbookFeedback(prev => ({ ...prev, [l.id]: e.target.value }))}
                                                         />
                                                         <div className="flex gap-1">
                                                             <Button size="xs" onClick={() => approveLogbook(l.id, 'APPROVED')} disabled={!periodes.find(p => String(p.id) === String(students.find(s => s.id === showLogbook)?.periodeId))?.isActive}>Approve</Button>
@@ -403,15 +412,15 @@ export default function BimbinganPage() {
                                                                 type="text"
                                                                 placeholder="Link TTD (opsional)"
                                                                 className="text-xs p-1 border rounded"
-                                                                value={signedFileUrl}
-                                                                onChange={(e) => setSignedFileUrl(e.target.value)}
+                                                                value={mingguanSignedFileUrl[item.id] || ''}
+                                                                onChange={(e) => setMingguanSignedFileUrl(prev => ({ ...prev, [item.id]: e.target.value }))}
                                                             />
                                                             <textarea
                                                                 placeholder="Catatan Revisi / Feedback"
                                                                 className="text-xs p-1 border rounded"
                                                                 rows="2"
-                                                                value={feedback}
-                                                                onChange={(e) => setFeedback(e.target.value)}
+                                                                value={mingguanFeedback[item.id] || ''}
+                                                                onChange={(e) => setMingguanFeedback(prev => ({ ...prev, [item.id]: e.target.value }))}
                                                             />
                                                             <div className="flex gap-1">
                                                                 <Button size="xs" onClick={() => approveMingguan(item.id, 'APPROVED')} disabled={!periodes.find(p => String(p.id) === String(students.find(s => s.id === showMingguan)?.periodeId))?.isActive}>Approve</Button>

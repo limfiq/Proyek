@@ -204,7 +204,7 @@ export default function AdminLaporanPage() {
     };
 
     const handleExportPDF = () => {
-        const columns = ['No', 'Mahasiswa', 'NIM', 'Instansi', 'Tipe', 'Harian', 'Mingguan', 'Tengah', 'Akhir', 'Final'];
+        const columns = ['No', 'Mahasiswa', 'NIM', 'Instansi', 'Tipe', 'Harian', 'Mingguan', 'Kemajuan', 'Akhir', 'Final'];
         const data = currentStudents.map((item, index) => {
             const akhir = getLatestLaporan(item.stats?.laporanAkhir);
             return [
@@ -276,7 +276,8 @@ export default function AdminLaporanPage() {
                             <SelectItem value="ALL">Semua Tipe</SelectItem>
                             <SelectItem value="PKL1">PKL 1</SelectItem>
                             <SelectItem value="PKL2">PKL 2</SelectItem>
-                            <SelectItem value="MBKM">MBKM</SelectItem>
+                            <SelectItem value="MBKM">MBKM 1</SelectItem>
+                            <SelectItem value="MBKM2">MBKM 2</SelectItem>
                         </SelectContent>
                     </Select>
 
@@ -310,7 +311,7 @@ export default function AdminLaporanPage() {
                                     <TableHead>Instansi</TableHead>
                                     <TableHead className="text-center">Logbook Harian</TableHead>
                                     <TableHead className="text-center">Logbook Mingguan</TableHead>
-                                    <TableHead className="text-center">Laporan Tengah</TableHead>
+                                    <TableHead className="text-center">Laporan Kemajuan</TableHead>
                                     <TableHead className="text-center">Laporan Akhir</TableHead>
                                     <TableHead className="text-center">Bukti IKU</TableHead>
                                     <TableHead className="text-center">Laporan Final</TableHead>

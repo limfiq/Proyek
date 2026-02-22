@@ -70,12 +70,13 @@ export default function MasterKriteriaPage() {
 
             <div className="bg-white/50 p-1 rounded-lg">
                 <Tabs defaultValue="PKL1" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 mb-6 h-12">
-                        <TabsTrigger value="PKL1" className="text-base">PKL 1 (Etika Profesi)</TabsTrigger>
-                        <TabsTrigger value="PKL2" className="text-base">PKL 2 (Proyek Sistem)</TabsTrigger>
-                        <TabsTrigger value="MBKM" className="text-base">MBKM (S1)</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-4 mb-6 h-12">
+                        <TabsTrigger value="PKL1" className="text-base">PKL 1</TabsTrigger>
+                        <TabsTrigger value="PKL2" className="text-base">PKL 2</TabsTrigger>
+                        <TabsTrigger value="MBKM" className="text-base">MBKM 1</TabsTrigger>
+                        <TabsTrigger value="MBKM2" className="text-base">MBKM 2</TabsTrigger>
                     </TabsList>
-                    {['PKL1', 'PKL2', 'MBKM'].map(tipe => (
+                    {['PKL1', 'PKL2', 'MBKM', 'MBKM2'].map(tipe => (
                         <TabsContent key={tipe} value={tipe} className="space-y-6 animate-in fade-in-50 duration-300">
                             {['PEMBIMBING', 'PENGUJI', 'INSTANSI'].map(role => {
                                 const items = data.filter(d => d.tipe === tipe && d.role === role);
@@ -177,13 +178,14 @@ export default function MasterKriteriaPage() {
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Tipe PKL</label>
+                            <label className="text-sm font-medium">Tipe Magang</label>
                             <Select value={form.tipe} onValueChange={val => setForm({ ...form, tipe: val })}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="PKL1">PKL 1 (Etika Profesi)</SelectItem>
-                                    <SelectItem value="PKL2">PKL 2 (Proyek Sistem)</SelectItem>
-                                    <SelectItem value="MBKM">MBKM (S1)</SelectItem>
+                                    <SelectItem value="PKL1">PKL 1</SelectItem>
+                                    <SelectItem value="PKL2">PKL 2</SelectItem>
+                                    <SelectItem value="MBKM">MBKM 1</SelectItem>
+                                    <SelectItem value="MBKM2">MBKM 2</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

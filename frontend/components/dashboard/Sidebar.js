@@ -49,7 +49,7 @@ export function Sidebar() {
                             className={cn(
                                 "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
                                 isActive
-                                    ? "bg-white/20 text-white shadow-inner"
+                                    ? "bg-[#F5A623] text-[#020617] shadow-md font-bold"
                                     : "text-white/80 hover:bg-white/10 hover:text-white"
                             )}
                         >
@@ -74,6 +74,7 @@ export const sidebarLinks = [
     // Dosen
     { href: '/dashboard/bimbingan', label: 'Bimbingan', icon: Users, roles: ['DOSEN'] },
     { href: '/dashboard/sidang', label: 'Sidang', icon: GraduationCap, roles: ['DOSEN'] },
+    { href: '/dashboard/sppd', label: 'SPPD', icon: FileText, roles: ['DOSEN'] },
     // Instansi
     { href: '/dashboard/peserta', label: 'Peserta PKL', icon: Users, roles: ['INSTANSI'] },
     // Admin (Shared Logic for SUPERADMIN, ADMINPRODI)

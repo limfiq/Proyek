@@ -10,6 +10,12 @@ const googleDriveService = require('../services/googleDriveService');
 exports.createHarian = async (req, res) => {
     try {
         const { pendaftaranId, tanggal, kegiatan, lokasi } = req.body;
+
+        const pendaftaran = await Pendaftaran.findByPk(pendaftaranId);
+        if (!pendaftaran || pendaftaran.status === 'PENDING') {
+            return res.status(403).send({ message: 'Tidak dapat mengisi laporan saat status pendaftaran PENDING.' });
+        }
+
         let fotoUrl = null;
 
         if (req.file) {
@@ -21,6 +27,43 @@ exports.createHarian = async (req, res) => {
             pendaftaranId, tanggal, kegiatan, lokasi, foto: fotoUrl, status: 'DRAFT'
         });
         res.status(201).send(laporan);
+    } catch (err) {
+        res.status(500).send({ message: err.message });
+    }
+};
+
+exports.updateHarian = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { tanggal, kegiatan, lokasi } = req.body;
+        const laporan = await LaporanHarian.findByPk(id, {
+            include: [{ model: Pendaftaran, as: 'pendaftaran' }]
+        });
+        if (!laporan) return res.status(404).send({ message: 'Logbook not found' });
+
+        if (laporan.pendaftaran?.status === 'PENDING') {
+            return res.status(403).send({ message: 'Tidak dapat mengubah laporan saat status pendaftaran PENDING.' });
+        }
+
+        let fotoUrl = laporan.foto;
+
+        if (req.file) {
+            const uploadResult = await googleDriveService.uploadFile(req.file);
+            fotoUrl = uploadResult.webViewLink;
+        }
+
+        laporan.tanggal = tanggal || laporan.tanggal;
+        laporan.kegiatan = kegiatan || laporan.kegiatan;
+        laporan.lokasi = lokasi || laporan.lokasi;
+        laporan.foto = fotoUrl;
+
+        // If it was rejected, reset to DRAFT after edit
+        if (laporan.status === 'REJECTED') {
+            laporan.status = 'DRAFT';
+        }
+
+        await laporan.save();
+        res.send(laporan);
     } catch (err) {
         res.status(500).send({ message: err.message });
     }
@@ -77,6 +120,12 @@ exports.updateFeedbackHarian = async (req, res) => {
 exports.submitTengah = async (req, res) => {
     try {
         const { pendaftaranId, fileUrl } = req.body;
+
+        const pendaftaran = await Pendaftaran.findByPk(pendaftaranId);
+        if (!pendaftaran || pendaftaran.status === 'PENDING') {
+            return res.status(403).send({ message: 'Tidak dapat mengisi laporan saat status pendaftaran PENDING.' });
+        }
+
         // Check if exists
         let laporan = await LaporanTengah.findOne({ where: { pendaftaranId } });
 
@@ -99,6 +148,12 @@ exports.submitTengah = async (req, res) => {
 exports.submitAkhir = async (req, res) => {
     try {
         const { pendaftaranId, fileUrl, type_iku, ikuUrl, finalUrl } = req.body;
+
+        const pendaftaran = await Pendaftaran.findByPk(pendaftaranId);
+        if (!pendaftaran || pendaftaran.status === 'PENDING') {
+            return res.status(403).send({ message: 'Tidak dapat mengisi laporan saat status pendaftaran PENDING.' });
+        }
+
         // Check if exists
         let laporan = await LaporanAkhir.findOne({ where: { pendaftaranId } });
 
@@ -146,6 +201,12 @@ const LaporanMingguan = db.LaporanMingguan;
 exports.createMingguan = async (req, res) => {
     try {
         const { pendaftaranId, mingguKe, fileUrl } = req.body;
+
+        const pendaftaran = await Pendaftaran.findByPk(pendaftaranId);
+        if (!pendaftaran || pendaftaran.status === 'PENDING') {
+            return res.status(403).send({ message: 'Tidak dapat mengisi laporan saat status pendaftaran PENDING.' });
+        }
+
         const laporan = await LaporanMingguan.create({
             pendaftaranId, mingguKe, fileUrl, status: 'PENDING'
         });
@@ -178,6 +239,33 @@ exports.approveMingguan = async (req, res) => {
         laporan.status = status || 'APPROVED';
         if (signedFileUrl) laporan.signedFileUrl = signedFileUrl;
         if (feedback) laporan.feedback = feedback;
+
+        await laporan.save();
+        res.send(laporan);
+    } catch (err) {
+        res.status(500).send({ message: err.message });
+    }
+};
+exports.updateMingguan = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { mingguKe, fileUrl } = req.body;
+        const laporan = await LaporanMingguan.findByPk(id, {
+            include: [{ model: Pendaftaran, as: 'pendaftaran' }]
+        });
+        if (!laporan) return res.status(404).send({ message: 'Laporan mingguan not found' });
+
+        if (laporan.pendaftaran?.status === 'PENDING') {
+            return res.status(403).send({ message: 'Tidak dapat mengubah laporan saat status pendaftaran PENDING.' });
+        }
+
+        laporan.mingguKe = mingguKe || laporan.mingguKe;
+        laporan.fileUrl = fileUrl || laporan.fileUrl;
+
+        // If it was rejected, reset to PENDING after edit
+        if (laporan.status === 'REJECTED') {
+            laporan.status = 'PENDING';
+        }
 
         await laporan.save();
         res.send(laporan);

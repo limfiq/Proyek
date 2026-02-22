@@ -55,8 +55,8 @@ export default function PendaftaranPage() {
             if (userRes && userRes.data && userRes.data.mahasiswa && userRes.data.mahasiswa.prodi) {
                 const jenjang = userRes.data.mahasiswa.prodi.jenjang;
                 if (jenjang === 'S1') {
-                    setAvailableTypes(['MBKM']);
-                    setFormData(f => ({ ...f, tipe: 'MBKM' }));
+                    setAvailableTypes(['MBKM1', 'MBKM2']);
+                    setFormData(f => ({ ...f, tipe: 'MBKM1' }));
                 } else {
                     setAvailableTypes(['PKL1', 'PKL2']);
                 }
@@ -104,9 +104,9 @@ export default function PendaftaranPage() {
             }
 
             await api.post('/api/pkl/register', {
-                tipe: formData.tipe,
+                tipe: formData.tipe === 'MBKM1' ? 'MBKM' : formData.tipe,
                 instansiId: finalInstansiId,
-                judulProject: formData.tipe === 'PKL2' ? formData.judulProject : ''
+                judulProject: (formData.tipe === 'PKL2' || formData.tipe === 'MBKM1' || formData.tipe === 'MBKM2') ? formData.judulProject : ''
             });
 
             setMessage('Pendaftaran berhasil dikirim! Menunggu persetujuan.');
@@ -138,7 +138,7 @@ export default function PendaftaranPage() {
                                         <div key={reg.id} className="p-4 rounded-lg border bg-white shadow-sm flex justify-between items-center">
                                             <div>
                                                 <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-primary">{reg.tipe}</span>
+                                                    <div className="font-bold text-lg">{reg.tipe === 'PKL1' ? 'PKL 1' : reg.tipe === 'PKL2' ? 'PKL 2' : reg.tipe === 'MBKM1' ? 'MBKM 1' : reg.tipe === 'MBKM2' ? 'MBKM 2' : reg.tipe}</div>
                                                     <span className="text-sm text-gray-500">• {reg.periode?.nama || 'Periode ???'}</span>
                                                 </div>
                                                 <p className="text-sm font-medium mt-1">{reg.instansi?.nama || 'Instansi ???'}</p>
@@ -168,7 +168,7 @@ export default function PendaftaranPage() {
                         )}
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Jenis PKL</label>
+                                <label className="text-sm font-medium">Jenis Magang</label>
                                 <div className="flex gap-4">
                                     {availableTypes.map((type) => (
                                         <div
@@ -176,11 +176,14 @@ export default function PendaftaranPage() {
                                             onClick={() => setFormData({ ...formData, tipe: type })}
                                             className={`flex-1 p-4 rounded-lg border cursor-pointer transition-all ${formData.tipe === type ? 'border-primary bg-blue-50 ring-2 ring-primary ring-offset-2' : 'hover:bg-gray-50'}`}
                                         >
-                                            <span className="font-bold">{type}</span>
+                                            <span className="font-bold">
+                                                {type === 'PKL1' ? 'PKL 1' : type === 'PKL2' ? 'PKL 2' : type === 'MBKM1' ? 'MBKM 1' : type === 'MBKM2' ? 'MBKM 2' : type}
+                                            </span>
                                             <p className="text-xs text-gray-500 mt-1">
                                                 {type === 'PKL1' ? 'Fokus Etika Profesi (1 Bulan)' :
                                                     type === 'PKL2' ? 'Fokus Sistem Informasi (6 Bulan/4 Bulan)' :
-                                                        'Program MBKM (Khusus S1)'}
+                                                        type === 'MBKM1' ? 'Program MBKM Semester 1 (Khusus S1)' :
+                                                            'Program MBKM Semester 2 (Khusus S1)'}
                                             </p>
                                         </div>
                                     ))}
@@ -236,10 +239,10 @@ export default function PendaftaranPage() {
                                 )}
                             </div>
 
-                            {(formData.tipe === 'PKL2' || formData.tipe === 'MBKM') && (
+                            {(formData.tipe === 'PKL2' || formData.tipe === 'MBKM1' || formData.tipe === 'MBKM2') && (
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">
-                                        {formData.tipe === 'MBKM' ? 'Link MBKM / Nama Program' : 'Judul Project (Rencana)'}
+                                        {(formData.tipe === 'MBKM1' || formData.tipe === 'MBKM2') ? 'Link MBKM / Nama Program' : 'Judul Project (Rencana)'}
                                     </label>
                                     <Input
                                         placeholder="Contoh: Sistem Informasi Inventory Gudang"

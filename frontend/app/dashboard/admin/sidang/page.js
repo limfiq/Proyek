@@ -298,7 +298,7 @@ export default function AdminSidangPage() {
                 Sesi: sidang?.sesi || '-'
             };
         });
-        exportToExcel(data, 'Jadwal_Sidang_PKL');
+        exportToExcel(data, 'Jadwal_Sidang_Magang');
     };
 
     const handleExportPDF = () => {
@@ -317,13 +317,13 @@ export default function AdminSidangPage() {
                 sidang?.sesi || '-'
             ];
         });
-        exportToPDF('Jadwal Sidang PKL', columns, data, 'Jadwal_Sidang_PKL', 'landscape');
+        exportToPDF('Jadwal Sidang Magang', columns, data, 'Jadwal_Sidang_Magang', 'landscape');
     };
 
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center no-print">
-                <h1 className="text-2xl font-bold text-gray-800">Jadwal Sidang PKL</h1>
+                <h1 className="text-2xl font-bold text-gray-800">Jadwal Sidang Magang</h1>
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={handleDownloadTemplate} title="Download Template CSV">
                         <Download className="h-4 w-4 mr-2" />
@@ -394,7 +394,8 @@ export default function AdminSidangPage() {
                             <SelectItem value="ALL">Semua Tipe</SelectItem>
                             <SelectItem value="PKL1">PKL 1</SelectItem>
                             <SelectItem value="PKL2">PKL 2</SelectItem>
-                            <SelectItem value="MBKM">MBKM</SelectItem>
+                            <SelectItem value="MBKM">MBKM 1</SelectItem>
+                            <SelectItem value="MBKM2">MBKM 2</SelectItem>
                         </SelectContent>
                     </Select>
 
@@ -428,7 +429,7 @@ export default function AdminSidangPage() {
 
             <div id="printable-area" className="rounded-xl border bg-white shadow-sm overflow-hidden print:border-none print:shadow-none">
                 <div className="hidden print:block text-center mb-6 pt-4">
-                    <h1 className="text-2xl font-bold uppercase">Jadwal Sidang PKL</h1>
+                    <h1 className="text-2xl font-bold uppercase">Jadwal Sidang Magang</h1>
                     <p className="text-sm text-gray-500">{new Date().toLocaleDateString('id-ID', { dateStyle: 'full' })}</p>
                 </div>
                 <table className="w-full text-sm">

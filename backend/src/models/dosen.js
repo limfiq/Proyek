@@ -27,6 +27,10 @@ module.exports = (sequelize, DataTypes) => {
         nama: {
             type: DataTypes.STRING,
             allowNull: false
+        },
+        noHp: {
+            type: DataTypes.STRING,
+            allowNull: true
         }
     }, {
         sequelize,

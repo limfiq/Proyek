@@ -4,16 +4,15 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import api from '@/lib/api';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
-import { Users, Calendar, CheckCircle, Clock } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { Users, Calendar, CheckCircle, Clock, FileText, Phone } from 'lucide-react';
 
 export default function DashboardPage() {
     const [user, setUser] = useState(null);
     const [role, setRole] = useState(null);
     const [stats, setStats] = useState(null);
     const [studentSidang, setStudentSidang] = useState(null);
-
-    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+    const [pendaftaranData, setPendaftaranData] = useState(null);
 
     const formatDate = (dateString) => {
         if (!dateString) return '-';
@@ -29,9 +28,8 @@ export default function DashboardPage() {
         }
         if (userRole) {
             setRole(userRole);
-            if (userRole === 'ADMIN' || userRole === 'DOSEN') {
-                fetchStats();
-            } else if (userRole === 'MAHASISWA') {
+            fetchStats();
+            if (userRole === 'MAHASISWA') {
                 fetchStudentData();
             }
         }
@@ -39,39 +37,27 @@ export default function DashboardPage() {
 
     const fetchStudentData = async () => {
         try {
-            // Check PKL status first
             const pklRes = await api.get('/api/pkl/me');
-
-            // Handle Array response from API
             const allPkl = Array.isArray(pklRes.data) ? pklRes.data : [pklRes.data];
-
-            // [NEW] Find Active Period PKL
             const activePkl = allPkl.find(p => p.periode && p.periode.isActive);
-            const pklData = activePkl || allPkl[0]; // Fallback to first if no active (or maybe null?)
+            const pklData = activePkl || allPkl[0];
 
             if (pklData) {
-                // Try to find sidang info in pkl object
+                setPendaftaranData(pklData);
                 let sidang = pklData.sidang;
-
-                // If not nested, try dedicated endpoint for current user (this might return old data if API not filtered)
-                // Better to rely on pklData.sidang if possible, or fetch schedule with specific pendaftaranId
                 if (!sidang && pklData.id) {
                     try {
                         const sidRes = await api.get(`/api/sidang/schedule?pendaftaranId=${pklData.id}`);
                         sidang = sidRes.data;
-                    } catch (e) {
-                        // ignore
-                    }
+                    } catch (e) { /* ignore */ }
                 }
-
-                // Only set if it belongs to the active period (or if we are okay showing old data when no active exists? User said "diisi dengan jadwal pada periode aktif")
-                // So if activePkl exists, show its sidang. If not, maybe show nothing?
-                // Let's stick to showing activePkl's sidang.
                 if (activePkl && sidang) {
                     setStudentSidang(sidang);
                 } else {
                     setStudentSidang(null);
                 }
+            } else {
+                setPendaftaranData(null);
             }
         } catch (err) {
             console.error(err);
@@ -90,110 +76,283 @@ export default function DashboardPage() {
     const Widgets = () => {
         if (role === 'MAHASISWA') {
             return (
-                <div className="grid gap-4 md:grid-cols-3">
-                    <Card>
-                        <CardHeader className="pb-2"><CardTitle className="text-sm">Status PKL</CardTitle></CardHeader>
-                        <CardContent><div className="text-2xl font-bold">Cek Status</div><p className="text-xs text-muted-foreground">Lihat menu Pendaftaran</p></CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="pb-2"><CardTitle className="text-sm">Logbook</CardTitle></CardHeader>
-                        <CardContent><div className="text-2xl font-bold">Isi Harian</div><p className="text-xs text-muted-foreground">Jangan lupa isi logbook</p></CardContent>
-                    </Card>
+                <div className="space-y-6">
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <Card>
+                            <CardHeader className="pb-2"><CardTitle className="text-sm">Status PKL</CardTitle></CardHeader>
+                            <CardContent><div className="text-2xl font-bold">Cek Status</div><p className="text-xs text-muted-foreground">Lihat menu Pendaftaran</p></CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2"><CardTitle className="text-sm">Logbook</CardTitle></CardHeader>
+                            <CardContent><div className="text-2xl font-bold">Isi Harian</div><p className="text-xs text-muted-foreground">Jangan lupa isi logbook</p></CardContent>
+                        </Card>
 
-                    <Card className={studentSidang ? "border-blue-200 bg-blue-50" : ""}>
-                        <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                            <CardTitle className="text-sm font-medium">Jadwal Sidang</CardTitle>
-                            <Calendar className="h-4 w-4 text-blue-500" />
-                        </CardHeader>
-                        <CardContent>
-                            {studentSidang ? (
-                                <div className="space-y-1">
-                                    <div className="text-lg font-bold text-blue-700">
-                                        {formatDate(studentSidang.tanggal)}
+                        <Card className={studentSidang ? "border-blue-200 bg-blue-50" : ""}>
+                            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                                <CardTitle className="text-sm font-medium">Jadwal Sidang</CardTitle>
+                                <Calendar className="h-4 w-4 text-blue-500" />
+                            </CardHeader>
+                            <CardContent>
+                                {studentSidang ? (
+                                    <div className="space-y-1">
+                                        <div className="text-lg font-bold text-blue-700">
+                                            {formatDate(studentSidang.tanggal)}
+                                        </div>
+                                        <div className="text-xs text-gray-600 flex items-center gap-1">
+                                            <Clock className="h-3 w-3" /> {studentSidang.sesi || '-'}
+                                            <span className="mx-1">|</span>
+                                            {studentSidang.ruang || '-'}
+                                        </div>
+                                        {studentSidang.dosenPenguji && (
+                                            <p className="text-xs text-gray-500 mt-1">Penguji: {studentSidang.dosenPenguji.nama}</p>
+                                        )}
                                     </div>
-                                    <div className="text-xs text-gray-600 flex items-center gap-1">
-                                        <Clock className="h-3 w-3" /> {studentSidang.sesi || '-'}
-                                        <span className="mx-1">|</span>
-                                        {studentSidang.ruang || '-'}
+                                ) : (
+                                    <div>
+                                        <div className="text-2xl font-bold">-</div>
+                                        <p className="text-xs text-muted-foreground">Belum dijadwalkan</p>
                                     </div>
-                                    {studentSidang.dosenPenguji && (
-                                        <p className="text-xs text-gray-500 mt-1">Penguji: {studentSidang.dosenPenguji.nama}</p>
-                                    )}
-                                </div>
-                            ) : (
-                                <div>
-                                    <div className="text-2xl font-bold">-</div>
-                                    <p className="text-xs text-muted-foreground">Belum dijadwalkan</p>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                                )}
+                            </CardContent>
+                        </Card>
 
-                    {/* New Revision Card */}
-                    <Card className={studentSidang && studentSidang.revisiPenguji ? "border-amber-200 bg-amber-50" : ""}>
-                        <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                            <CardTitle className="text-sm font-medium">Revisi Dosen</CardTitle>
-                            <Calendar className="h-4 w-4 text-amber-500" />
-                        </CardHeader>
-                        <CardContent>
-                            {studentSidang && studentSidang.revisiPenguji ? (
-                                <div className="space-y-1">
-                                    <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-[100px] overflow-y-auto">
-                                        {studentSidang.revisiPenguji}
+                        {/* Supervisor Card */}
+                        <Card className={pendaftaranData?.pembimbing ? "border-green-200 bg-green-50" : ""}>
+                            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                                <CardTitle className="text-sm font-medium">Dosen Pembimbing</CardTitle>
+                                <Users className="h-4 w-4 text-green-500" />
+                            </CardHeader>
+                            <CardContent>
+                                {pendaftaranData?.pembimbing ? (
+                                    <div className="space-y-2">
+                                        <div className="text-lg font-bold text-green-700 leading-tight">
+                                            {pendaftaranData.pembimbing.nama}
+                                        </div>
+                                        {pendaftaranData.pembimbing.noHp ? (
+                                            <div className="text-xs text-gray-600 flex items-center gap-1.5 bg-white/50 w-fit px-2 py-1 rounded border border-green-100">
+                                                <Phone className="h-3 w-3 text-green-600" />
+                                                <span className="font-medium">{pendaftaranData.pembimbing.noHp}</span>
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs text-gray-500 italic">Kontak belum tersedia</p>
+                                        )}
                                     </div>
-                                    <p className="text-xs text-muted-foreground mt-2">Segera perbaiki dan temui dosen.</p>
-                                </div>
-                            ) : (
-                                <div>
-                                    <div className="text-2xl font-bold">-</div>
-                                    <p className="text-xs text-muted-foreground">Tidak ada revisi</p>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                                ) : (
+                                    <div>
+                                        <div className="text-2xl font-bold">-</div>
+                                        <p className="text-xs text-muted-foreground">Belum ada pembimbing</p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Revision Card */}
+                        <Card className={studentSidang && studentSidang.revisiPenguji ? "border-amber-200 bg-amber-50" : ""}>
+                            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                                <CardTitle className="text-sm font-medium">Revisi Dosen</CardTitle>
+                                <Calendar className="h-4 w-4 text-amber-500" />
+                            </CardHeader>
+                            <CardContent>
+                                {studentSidang && studentSidang.revisiPenguji ? (
+                                    <div className="space-y-1">
+                                        <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-[100px] overflow-y-auto">
+                                            {studentSidang.revisiPenguji}
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-2">Segera perbaiki dan temui dosen.</p>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <div className="text-2xl font-bold">-</div>
+                                        <p className="text-xs text-muted-foreground">Tidak ada revisi</p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Detailed Logbook Stats for MAHASISWA */}
+                    {stats && stats.logbookStats && (
+                        <div className="grid gap-4 md:grid-cols-2 mt-6">
+                            <Card className="border-l-4 border-l-blue-600 bg-white">
+                                <CardHeader className="pb-2">
+                                    <div className="flex justify-between items-center">
+                                        <CardTitle className="text-lg font-bold">Progress Logbook Harian</CardTitle>
+                                        <div className="bg-blue-50 p-2 rounded-full">
+                                            <FileText className="h-5 w-5 text-blue-600" />
+                                        </div>
+                                    </div>
+                                    <CardDescription>Target pengisian logbook berdasarkan hari kerja PKL</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-3 gap-4 text-center">
+                                        <div>
+                                            <p className="text-[10px] text-gray-500 uppercase font-bold">Harus Diisi</p>
+                                            <p className="text-2xl font-black text-gray-900">{stats.logbookStats.daily.target}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-gray-500 uppercase font-bold">Sudah Terisi</p>
+                                            <p className="text-2xl font-black text-green-600">{stats.logbookStats.daily.filled}</p>
+                                        </div>
+                                        <div className={`rounded-lg py-2 border ${stats.logbookStats.daily.target - stats.logbookStats.daily.filled > 0 ? 'bg-red-50 border-red-100' : 'bg-green-50 border-green-100'}`}>
+                                            <p className={`text-[10px] uppercase font-bold ${stats.logbookStats.daily.target - stats.logbookStats.daily.filled > 0 ? 'text-red-700' : 'text-green-700'}`}>Belum Diisi</p>
+                                            <p className={`text-2xl font-black ${stats.logbookStats.daily.target - stats.logbookStats.daily.filled > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                                {Math.max(0, stats.logbookStats.daily.target - stats.logbookStats.daily.filled)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 w-full bg-gray-100 rounded-full h-2">
+                                        <div
+                                            className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                                            style={{ width: `${Math.min(100, (stats.logbookStats.daily.filled / stats.logbookStats.daily.target) * 100) || 0}%` }}
+                                        ></div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border-l-4 border-l-purple-600 bg-white">
+                                <CardHeader className="pb-2">
+                                    <div className="flex justify-between items-center">
+                                        <CardTitle className="text-lg font-bold">Progress Laporan Mingguan</CardTitle>
+                                        <div className="bg-purple-50 p-2 rounded-full">
+                                            <Calendar className="h-5 w-5 text-purple-600" />
+                                        </div>
+                                    </div>
+                                    <CardDescription>Target pengisian laporan berdasarkan minggu aktif PKL</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-3 gap-4 text-center">
+                                        <div>
+                                            <p className="text-[10px] text-gray-500 uppercase font-bold">Harus Diisi</p>
+                                            <p className="text-2xl font-black text-gray-900">{stats.logbookStats.weekly.target}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-gray-500 uppercase font-bold">Sudah Terisi</p>
+                                            <p className="text-2xl font-black text-green-600">{stats.logbookStats.weekly.filled}</p>
+                                        </div>
+                                        <div className={`rounded-lg py-2 border ${stats.logbookStats.weekly.target - stats.logbookStats.weekly.filled > 0 ? 'bg-red-50 border-red-100' : 'bg-green-50 border-green-100'}`}>
+                                            <p className={`text-[10px] uppercase font-bold ${stats.logbookStats.weekly.target - stats.logbookStats.weekly.filled > 0 ? 'text-red-700' : 'text-green-700'}`}>Belum Diisi</p>
+                                            <p className={`text-2xl font-black ${stats.logbookStats.weekly.target - stats.logbookStats.weekly.filled > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                                {Math.max(0, stats.logbookStats.weekly.target - stats.logbookStats.weekly.filled)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 w-full bg-gray-100 rounded-full h-2">
+                                        <div
+                                            className="bg-purple-600 h-2 rounded-full transition-all duration-500"
+                                            style={{ width: `${Math.min(100, (stats.logbookStats.weekly.filled / stats.logbookStats.weekly.target) * 100) || 0}%` }}
+                                        ></div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
                 </div>
-            )
+            );
         }
+
         if (role === 'DOSEN' && stats) {
             return (
-                <div className="grid gap-4 md:grid-cols-3">
-                    <Card>
-                        <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                            <CardTitle className="text-sm font-medium">Periode Aktif</CardTitle>
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.periode ? stats.periode.nama : '-'}</div>
-                            <p className="text-xs text-muted-foreground">{stats.periode ? `${formatDate(stats.periode.tanggalMulai)} - ${formatDate(stats.periode.tanggalSelesai)}` : 'Tidak ada'}</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                            <CardTitle className="text-sm font-medium">Bimbingan</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.bimbinganCount}</div>
-                            <p className="text-xs text-muted-foreground">Mahasiswa Bimbingan</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                            <CardTitle className="text-sm font-medium">Sidang</CardTitle>
-                            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.ujianCount}</div>
-                            <p className="text-xs text-muted-foreground">Mahasiswa Ujian</p>
-                        </CardContent>
-                    </Card>
+                <div className="space-y-6">
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <Card>
+                            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                                <CardTitle className="text-sm font-medium">Periode Aktif</CardTitle>
+                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stats.periode ? stats.periode.nama : '-'}</div>
+                                <p className="text-xs text-muted-foreground">{stats.periode ? `${formatDate(stats.periode.tanggalMulai)} - ${formatDate(stats.periode.tanggalSelesai)}` : 'Tidak ada'}</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                                <CardTitle className="text-sm font-medium">Bimbingan</CardTitle>
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stats.bimbinganCount}</div>
+                                <p className="text-xs text-muted-foreground">Mahasiswa Bimbingan</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                                <CardTitle className="text-sm font-medium">Sidang</CardTitle>
+                                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stats.ujianCount}</div>
+                                <p className="text-xs text-muted-foreground">Mahasiswa Ujian</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {stats.logbookStats && (
+                        /* existing logbook stats cards */
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {/* ... same daily/weekly cards ... */}
+                        </div>
+                    )}
+
+                    {/* [NEW] Supervised Students List */}
+                    {stats.bimbinganList && stats.bimbinganList.length > 0 && (
+                        <Card className="border-t-4 border-t-green-600">
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle>Mahasiswa Bimbingan</CardTitle>
+                                        <CardDescription>Daftar mahasiswa yang Anda bimbing periode ini.</CardDescription>
+                                    </div>
+                                    <Users className="h-5 w-5 text-green-600" />
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b text-left text-muted-foreground uppercase text-[10px] font-bold">
+                                                <th className="pb-2">Nama / NIM</th>
+                                                <th className="pb-2">Instansi</th>
+                                                <th className="pb-2 text-right">Kontak</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {stats.bimbinganList.map((mhs) => (
+                                                <tr key={mhs.id} className="hover:bg-slate-50 transition-colors">
+                                                    <td className="py-3">
+                                                        <div className="font-bold text-gray-900">{mhs.nama}</div>
+                                                        <div className="text-[10px] text-muted-foreground font-mono">{mhs.nim}</div>
+                                                    </td>
+                                                    <td className="py-3 text-xs text-slate-600">{mhs.instansi || '-'}</td>
+                                                    <td className="py-3 text-right">
+                                                        {mhs.noHp ? (
+                                                            <a
+                                                                href={`https://wa.me/${mhs.noHp.replace(/\D/g, '')}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-1 px-2 py-1 rounded bg-green-100 text-green-700 text-[10px] font-bold hover:bg-green-200"
+                                                            >
+                                                                <Phone className="h-3 w-3" />
+                                                                {mhs.noHp}
+                                                            </a>
+                                                        ) : (
+                                                            <span className="text-[10px] text-gray-400 italic">No contact</span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
-            )
+            );
         }
+
         if (role === 'ADMIN' && stats) {
             return (
                 <div className="space-y-6">
-                    {/* Key Metrics Cards */}
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -202,9 +361,7 @@ export default function DashboardPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">{stats.periode ? stats.periode.nama : 'Tidak Ada'}</div>
-                                <p className="text-xs text-muted-foreground">
-                                    {stats.periode ? `${formatDate(stats.periode.tanggalMulai)} - ${formatDate(stats.periode.tanggalSelesai)}` : 'Buat periode baru'}
-                                </p>
+                                <p className="text-xs text-muted-foreground">{stats.periode ? `${formatDate(stats.periode.tanggalMulai)} - ${formatDate(stats.periode.tanggalSelesai)}` : 'Buat periode baru'}</p>
                             </CardContent>
                         </Card>
                         <Card>
@@ -239,17 +396,26 @@ export default function DashboardPage() {
                         </Card>
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">MBKM</CardTitle>
+                                <CardTitle className="text-sm font-medium">MBKM 1</CardTitle>
                                 <Users className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">{stats.breakdown.MBKM}</div>
-                                <p className="text-xs text-muted-foreground">Program MBKM</p>
+                                <p className="text-xs text-muted-foreground">Program MBKM 1</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">MBKM 2</CardTitle>
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{stats.breakdown.MBKM2}</div>
+                                <p className="text-xs text-muted-foreground">Program MBKM 2</p>
                             </CardContent>
                         </Card>
                     </div>
 
-                    {/* Charts Section */}
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                         <Card className="col-span-4">
                             <CardHeader>
@@ -263,9 +429,10 @@ export default function DashboardPage() {
                                         <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                                         <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                                         <Legend />
-                                        <Bar dataKey="PKL1" stackId="a" fill="#0088FE" radius={[0, 0, 4, 4]} />
-                                        <Bar dataKey="PKL2" stackId="a" fill="#00C49F" radius={[0, 0, 0, 0]} />
-                                        <Bar dataKey="MBKM" stackId="a" fill="#FFBB28" radius={[4, 4, 0, 0]} />
+                                        <Bar dataKey="PKL1" stackId="a" fill="#0088FE" radius={[0, 0, 4, 4]} name="PKL 1" />
+                                        <Bar dataKey="PKL2" stackId="a" fill="#00C49F" radius={[0, 0, 0, 0]} name="PKL 2" />
+                                        <Bar dataKey="MBKM" stackId="a" fill="#FFBB28" radius={[0, 0, 0, 0]} name="MBKM 1" />
+                                        <Bar dataKey="MBKM2" stackId="a" fill="#FF8042" radius={[4, 4, 0, 0]} name="MBKM 2" />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </CardContent>
@@ -297,8 +464,9 @@ export default function DashboardPage() {
                         </Card>
                     </div>
                 </div>
-            )
+            );
         }
+
         if ((role === 'ADMIN' || role === 'DOSEN') && !stats) return <p className="text-center p-4">Loading Dashboard...</p>;
         return null;
     };

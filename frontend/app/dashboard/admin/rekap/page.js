@@ -240,7 +240,7 @@ export default function AdminRekapPage() {
             getGrade(r.finalScore),
             r.revisi || '-'
         ]);
-        exportToPDF('Rekapitulasi Nilai PKL', columns, data, 'Rekap_Nilai_PKL', 'landscape');
+        exportToPDF('Rekapitulasi Nilai Magang', columns, data, 'Rekap_Nilai_Magang', 'landscape');
     };
 
     const renderScore = (score, status) => {
@@ -253,7 +253,7 @@ export default function AdminRekapPage() {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center no-print">
-                <h1 className="text-2xl font-bold">Rekapitulasi Nilai PKL</h1>
+                <h1 className="text-2xl font-bold">Rekapitulasi Nilai Magang</h1>
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={handleExportExcel}>XLS</Button>
                     <Button variant="outline" size="sm" onClick={handleExportPDF}>PDF</Button>
@@ -307,10 +307,11 @@ export default function AdminRekapPage() {
             </div>
 
             <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setCurrentPage(1); }} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-4">
-                    <TabsTrigger value="PKL1">PKL 1 (Etika Profesi)</TabsTrigger>
-                    <TabsTrigger value="PKL2">PKL 2 (Proyek Sistem)</TabsTrigger>
-                    <TabsTrigger value="MBKM">MBKM (S1)</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-4 mb-4">
+                    <TabsTrigger value="PKL1">PKL 1</TabsTrigger>
+                    <TabsTrigger value="PKL2">PKL 2</TabsTrigger>
+                    <TabsTrigger value="MBKM">MBKM 1</TabsTrigger>
+                    <TabsTrigger value="MBKM2">MBKM 2</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="PKL1">
@@ -320,6 +321,9 @@ export default function AdminRekapPage() {
                     <RecapTable data={paginatedRecap} handleEdit={handleEdit} renderScore={renderScore} kriteriaList={kriteriaList} />
                 </TabsContent>
                 <TabsContent value="MBKM">
+                    <RecapTable data={paginatedRecap} handleEdit={handleEdit} renderScore={renderScore} kriteriaList={kriteriaList} />
+                </TabsContent>
+                <TabsContent value="MBKM2">
                     <RecapTable data={paginatedRecap} handleEdit={handleEdit} renderScore={renderScore} kriteriaList={kriteriaList} />
                 </TabsContent>
             </Tabs>

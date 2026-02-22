@@ -112,7 +112,7 @@ export default function SidangPage() {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold">Penilaian Sidang PKL</h1>
+                <h1 className="text-2xl font-bold">Penilaian Sidang Magang</h1>
                 {/* [NEW] Period Filter */}
                 <div className="w-[200px]">
                     <Select value={selectedPeriode} onValueChange={setSelectedPeriode}>

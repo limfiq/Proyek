@@ -25,7 +25,7 @@ export default function PesertaPage() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold">Peserta PKL Instansi</h1>
+            <h1 className="text-2xl font-bold">Peserta Magang Instansi</h1>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {students.map(mhs => (
@@ -46,7 +46,7 @@ export default function PesertaPage() {
                                     className="mt-2"
                                     onClick={() => setSelectedStudent(mhs.id)}
                                 >
-                                    Input Nilai Instansi
+                                    Input Nilai Magang Instansi
                                 </Button>
                             </div>
                         </CardContent>

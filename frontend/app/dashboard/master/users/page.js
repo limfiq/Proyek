@@ -15,7 +15,7 @@ export default function MasterUsersPage() {
     const [prodiList, setProdiList] = useState([]);
     const [loading, setLoading] = useState(false);
     const [form, setForm] = useState({ username: '', password: '', role: 'MAHASISWA' });
-    const [profile, setProfile] = useState({ nama: '', nim: '', nidn: '', kelas: '', angkatan: '', prodiId: '' });
+    const [profile, setProfile] = useState({ nama: '', nim: '', nidn: '', kelas: '', angkatan: '', noHp: '', prodiId: '' });
     const [editingId, setEditingId] = useState(null);
 
     // Pagination & Search State
@@ -55,9 +55,11 @@ export default function MasterUsersPage() {
                     payload.profileData.nim = profile.nim;
                     payload.profileData.kelas = profile.kelas;
                     payload.profileData.angkatan = profile.angkatan;
+                    payload.profileData.noHp = profile.noHp;
                     payload.profileData.prodiId = profile.prodiId;
                 } else if (form.role === 'DOSEN') {
                     payload.profileData.nidn = profile.nidn;
+                    payload.profileData.noHp = profile.noHp;
                 }
             }
 
@@ -130,7 +132,8 @@ export default function MasterUsersPage() {
                     payload.profileData.nim = nomerInduk;
                     payload.profileData.kelas = getVal(5);
                     payload.profileData.angkatan = getVal(6);
-                    const prodiName = getVal(7);
+                    payload.profileData.noHp = getVal(7);
+                    const prodiName = getVal(8);
 
                     // Match prodi
                     const foundProdi = prodiList.find(p => p.nama.toLowerCase() === prodiName.toLowerCase());
@@ -139,6 +142,7 @@ export default function MasterUsersPage() {
                     }
                 } else if (role === 'DOSEN') {
                     payload.profileData.nidn = nomerInduk;
+                    payload.profileData.noHp = getVal(7);
                 }
 
                 try {
@@ -163,9 +167,9 @@ export default function MasterUsersPage() {
     };
 
     const handleDownloadTemplate = () => {
-        const header = 'Username,Password,Role,Nama,NIM_NIDN,Kelas,Angkatan,Prodi\n';
-        const sample1 = 'mhs1,mhs123,MAHASISWA,Budi Santoso,12345678,3A,2023,Teknik Informatika\n';
-        const sample2 = 'dosen1,dosen123,DOSEN,Dr. Agus,98765432,,,,\n';
+        const header = 'Username,Password,Role,Nama,NIM_NIDN,Kelas,Angkatan,No_HP,Prodi\n';
+        const sample1 = 'mhs1,mhs123,MAHASISWA,Budi Santoso,12345678,3A,2023,08123456789,Teknik Informatika\n';
+        const sample2 = 'dosen1,dosen123,DOSEN,Dr. Agus,98765432,,,0899887766,,\n';
         const blob = new Blob([header + sample1 + sample2], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -179,13 +183,14 @@ export default function MasterUsersPage() {
         const newForm = { username: user.username, password: '', role: user.role };
         setForm(newForm);
 
-        const newProfile = { nama: '', nim: '', nidn: '', kelas: '', angkatan: '', prodiId: '' };
+        const newProfile = { nama: '', nim: '', nidn: '', kelas: '', angkatan: '', noHp: '', prodiId: '' };
 
         if (user.role === 'MAHASISWA' && user.mahasiswa) {
             newProfile.nama = user.mahasiswa.nama || '';
             newProfile.nim = user.mahasiswa.nim || '';
             newProfile.kelas = user.mahasiswa.kelas || '';
             newProfile.angkatan = user.mahasiswa.angkatan || '';
+            newProfile.noHp = user.mahasiswa.noHp || '';
 
             if (user.mahasiswa.prodi) {
                 newProfile.prodiId = String(user.mahasiswa.prodi.id);
@@ -193,6 +198,7 @@ export default function MasterUsersPage() {
         } else if (user.role === 'DOSEN' && user.dosen) {
             newProfile.nama = user.dosen.nama || '';
             newProfile.nidn = user.dosen.nidn || '';
+            newProfile.noHp = user.dosen.noHp || '';
         } else if (user.role === 'INSTANSI' && user.instansi) {
             newProfile.nama = user.instansi.nama || '';
         }
@@ -202,7 +208,7 @@ export default function MasterUsersPage() {
 
     const resetForm = () => {
         setForm({ username: '', password: '', role: 'MAHASISWA' });
-        setProfile({ nama: '', nim: '', nidn: '', kelas: '', angkatan: '', prodiId: '' });
+        setProfile({ nama: '', nim: '', nidn: '', kelas: '', angkatan: '', noHp: '', prodiId: '' });
         setEditingId(null);
     };
 
@@ -254,9 +260,11 @@ export default function MasterUsersPage() {
                 profileName = u.mahasiswa?.nama || '';
                 nomerInduk = u.mahasiswa?.nim || '';
                 prodiName = u.mahasiswa?.prodi?.nama || '';
+                contact = u.mahasiswa?.noHp || '';
             } else if (u.role === 'DOSEN') {
                 profileName = u.dosen?.nama || '';
                 nomerInduk = u.dosen?.nidn || '';
+                contact = u.dosen?.noHp || '';
             } else if (u.role === 'INSTANSI') {
                 profileName = u.instansi?.nama || '';
             }
@@ -267,6 +275,7 @@ export default function MasterUsersPage() {
                 Role: u.role,
                 Name: profileName,
                 NIM_NIDN: nomerInduk,
+                No_HP: contact,
                 Prodi: prodiName
             };
         });
@@ -274,24 +283,27 @@ export default function MasterUsersPage() {
     };
 
     const handleExportPDF = () => {
-        const columns = ['No', 'Username', 'Role', 'Name', 'NIM/NIDN', 'Prodi'];
+        const columns = ['No', 'Username', 'Role', 'Name', 'NIM/NIDN', 'No HP', 'Prodi'];
         const data = users.map((u, index) => {
             let profileName = '';
             let nomerInduk = '';
             let prodiName = '';
+            let contact = '';
 
             if (u.role === 'MAHASISWA') {
                 profileName = u.mahasiswa?.nama || '';
                 nomerInduk = u.mahasiswa?.nim || '';
                 prodiName = u.mahasiswa?.prodi?.nama || '';
+                contact = u.mahasiswa?.noHp || '';
             } else if (u.role === 'DOSEN') {
                 profileName = u.dosen?.nama || '';
                 nomerInduk = u.dosen?.nidn || '';
+                contact = u.dosen?.noHp || '';
             } else if (u.role === 'INSTANSI') {
                 profileName = u.instansi?.nama || '';
             }
 
-            return [index + 1, u.username, u.role, profileName, nomerInduk, prodiName];
+            return [index + 1, u.username, u.role, profileName, nomerInduk, contact, prodiName];
         });
         exportToPDF('Data Master Users', columns, data, 'Data_Users', 'landscape');
     };
@@ -361,9 +373,21 @@ export default function MasterUsersPage() {
                                 </>
                             )}
                             {form.role === 'DOSEN' && (
+                                <>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">NIDN</label>
+                                        <Input value={profile.nidn} onChange={e => setProfile({ ...profile, nidn: e.target.value })} required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">No HP</label>
+                                        <Input value={profile.noHp} onChange={e => setProfile({ ...profile, noHp: e.target.value })} placeholder="08xxxxxxxxxx" />
+                                    </div>
+                                </>
+                            )}
+                            {form.role === 'MAHASISWA' && (
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">NIDN</label>
-                                    <Input value={profile.nidn} onChange={e => setProfile({ ...profile, nidn: e.target.value })} required />
+                                    <label className="text-sm font-medium">No HP</label>
+                                    <Input value={profile.noHp} onChange={e => setProfile({ ...profile, noHp: e.target.value })} placeholder="08xxxxxxxxxx" />
                                 </div>
                             )}
                         </div>
@@ -436,6 +460,7 @@ export default function MasterUsersPage() {
                             <th className="p-4 font-medium">Role</th>
                             <th className="p-4 font-medium">Nama (Profile)</th>
                             <th className="p-4 font-medium">Detail ID</th>
+                            <th className="p-4 font-medium">No HP</th>
                             <th className="p-4 font-medium text-right">Action</th>
                         </tr>
                     </thead>
@@ -461,6 +486,10 @@ export default function MasterUsersPage() {
                                     <td className="p-4">
                                         {u.role === 'MAHASISWA' ? u.mahasiswa?.nim :
                                             u.role === 'DOSEN' ? u.dosen?.nidn : '-'}
+                                    </td>
+                                    <td className="p-4">
+                                        {u.role === 'MAHASISWA' ? u.mahasiswa?.noHp :
+                                            u.role === 'DOSEN' ? u.dosen?.noHp : '-'}
                                     </td>
                                     <td className="p-4 text-right">
                                         <Button size="sm" variant="ghost" className="text-blue-500 mr-1" onClick={() => handleEdit(u)}>

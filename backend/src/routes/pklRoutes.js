@@ -43,5 +43,11 @@ router.get('/laporan/akhir', verifyToken, laporanController.getAkhir);
 router.post('/laporan/mingguan', verifyToken, laporanController.createMingguan);
 router.get('/laporan/mingguan', verifyToken, laporanController.listMingguan);
 router.put('/laporan/mingguan/:id/approve', verifyToken, laporanController.approveMingguan);
+router.put('/laporan/mingguan/:id', verifyToken, laporanController.updateMingguan);
+
+const sppdController = require('../controllers/sppdController');
+router.post('/sppd', verifyToken, upload.single('foto'), sppdController.createSppd);
+router.get('/sppd', verifyToken, sppdController.getSppdList);
+router.get('/sppd/bimbingan', verifyToken, sppdController.getBimbinganLocations);
 
 module.exports = router;

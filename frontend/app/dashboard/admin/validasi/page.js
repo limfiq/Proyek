@@ -257,7 +257,7 @@ export default function AdminValidasiPage() {
             Pembimbing: r.pembimbing?.nama || 'Belum ditunjuk',
             Status: r.status
         }));
-        exportToExcel(data, 'Data_Validasi_PKL');
+        exportToExcel(data, 'Data_Validasi_Magang');
     };
 
     const handleExportPDF = () => {
@@ -272,7 +272,7 @@ export default function AdminValidasiPage() {
             r.pembimbing?.nama || 'Belum ditunjuk',
             r.status
         ]);
-        exportToPDF('Validasi & Plotting PKL', columns, data, 'Data_Validasi_PKL', 'landscape');
+        exportToPDF('Validasi & Plotting Magang', columns, data, 'Data_Validasi_Magang', 'landscape');
     };
 
     // Prepared Options for Combobox
@@ -296,7 +296,7 @@ export default function AdminValidasiPage() {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-800">Validasi & Plotting PKL</h1>
+                <h1 className="text-2xl font-bold text-gray-800">Validasi & Plotting Magang</h1>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={handleExportExcel}>XLS</Button>
                     <Button variant="outline" size="sm" onClick={handleExportPDF}>PDF</Button>
@@ -364,7 +364,8 @@ export default function AdminValidasiPage() {
                             <SelectItem value="ALL">Semua Tipe</SelectItem>
                             <SelectItem value="PKL1">PKL 1</SelectItem>
                             <SelectItem value="PKL2">PKL 2</SelectItem>
-                            <SelectItem value="MBKM">MBKM</SelectItem>
+                            <SelectItem value="MBKM">MBKM 1</SelectItem>
+                            <SelectItem value="MBKM2">MBKM 2</SelectItem>
                         </SelectContent>
                     </Select>
 
@@ -402,7 +403,7 @@ export default function AdminValidasiPage() {
                         {filteredRegistrations.length === 0 && (
                             <tr>
                                 <td colSpan="6" className="p-8 text-center text-gray-400 italic">
-                                    Belum ada data pendaftaran PKL
+                                    Belum ada data pendaftaran Magang
                                 </td>
                             </tr>
                         )}
@@ -545,13 +546,14 @@ export default function AdminValidasiPage() {
                             />
                         </div>
                         <div className="flex flex-col space-y-2">
-                            <label className="text-sm font-semibold text-gray-700">Tipe PKL</label>
+                            <label className="text-sm font-semibold text-gray-700">Tipe Magang</label>
                             <Select defaultValue="PKL1" onValueChange={val => setCreateForm({ ...createForm, tipe: val })}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="PKL1">PKL 1</SelectItem>
                                     <SelectItem value="PKL2">PKL 2</SelectItem>
-                                    <SelectItem value="MBKM">MBKM</SelectItem>
+                                    <SelectItem value="MBKM">MBKM 1</SelectItem>
+                                    <SelectItem value="MBKM2">MBKM 2</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -573,11 +575,13 @@ export default function AdminValidasiPage() {
                                 placeholder="Pilih Dosen"
                             />
                         </div>
-                        {createForm.tipe === 'PKL2' && (
+                        {(createForm.tipe === 'PKL2' || createForm.tipe === 'MBKM' || createForm.tipe === 'MBKM2') && (
                             <div className="space-y-2">
-                                <label className="text-sm font-semibold text-gray-700">Judul Project</label>
+                                <label className="text-sm font-semibold text-gray-700">
+                                    {(createForm.tipe === 'MBKM' || createForm.tipe === 'MBKM2') ? 'Link MBKM / Nama Program' : 'Judul Project'}
+                                </label>
                                 <Input
-                                    placeholder="Judul Project PKL"
+                                    placeholder={createForm.tipe === 'MBKM' || createForm.tipe === 'MBKM2' ? 'Contoh: Program MSIB Kampus Merdeka' : 'Judul Project PKL'}
                                     value={createForm.judulProject}
                                     onChange={e => setCreateForm({ ...createForm, judulProject: e.target.value })}
                                 />

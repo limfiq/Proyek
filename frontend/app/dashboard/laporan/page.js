@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Upload, Camera, MapPin, RefreshCw } from 'lucide-react';
+import { FileText, Upload, Camera, MapPin, RefreshCw, ChevronDown, ChevronRight, Calendar as CalendarIcon, AlertCircle } from 'lucide-react';
 import { Pagination } from '@/components/ui/pagination';
 import api from '@/lib/api';
 import { motion } from 'framer-motion';
@@ -25,8 +25,13 @@ export default function LaporanPage() {
     const [mingguanList, setMingguanList] = useState([]);
     const [formMingguan, setFormMingguan] = useState({ mingguKe: '', fileUrl: '' });
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(''); // Changed from message to error
+    const [error, setError] = useState('');
+    const [message, setMessage] = useState('');
     const [editingLogbook, setEditingLogbook] = useState(null); // [NEW] State for editing
+    const [editingMingguan, setEditingMingguan] = useState(null); // [NEW] Weekly edit state
+    const [isEditingTengah, setIsEditingTengah] = useState(false); // [NEW] Tengah edit mode
+    const [isEditingAkhir, setIsEditingAkhir] = useState(false); // [NEW] Akhir edit mode
+    const [expandedWeeks, setExpandedWeeks] = useState({}); // [NEW] Weekly collapse state
 
     const { toast } = useToast();
     const [laporanTengah, setLaporanTengah] = useState(null);
@@ -68,7 +73,24 @@ export default function LaporanPage() {
     const loadHarian = async (id) => {
         try {
             const res = await api.get(`/api/laporan/harian?pendaftaranId=${id}`);
-            setHarianList(res.data);
+            const data = res.data;
+            setHarianList(data);
+
+            // [NEW] Default expand latest week
+            if (data.length > 0) {
+                // Use T00:00:00 to avoid timezone shifts
+                const startDateStr = pendaftaran?.periode?.tanggalMulai || new Date().toISOString().split('T')[0];
+                const startDate = new Date(startDateStr + 'T00:00:00');
+                let maxWeek = 1;
+                data.forEach(item => {
+                    const itemDate = new Date(item.tanggal + 'T00:00:00');
+                    const diffTime = itemDate - startDate;
+                    // weekNum starts from 1 based on days from startDate
+                    const weekNum = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7)) + 1;
+                    if (weekNum > maxWeek) maxWeek = weekNum;
+                });
+                setExpandedWeeks(prev => ({ ...prev, [maxWeek]: true }));
+            }
         } catch (err) {
             console.error(err);
         }
@@ -213,12 +235,23 @@ export default function LaporanPage() {
                 ...formTengah
             });
             toast({ title: 'Berhasil', description: 'Laporan tengah disubmit!' });
+            setIsEditingTengah(false);
             loadTengah(pendaftaran.id);
         } catch (err) {
             toast({ title: 'Gagal', description: err.message, variant: 'destructive' });
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleEditTengah = () => {
+        setIsEditingTengah(true);
+        setFormTengah({ fileUrl: laporanTengah?.fileUrl || '' });
+    };
+
+    const handleCancelEditTengah = () => {
+        setIsEditingTengah(false);
+        setFormTengah({ fileUrl: '' });
     };
 
     const handleSubmitAkhir = async (e) => {
@@ -231,6 +264,7 @@ export default function LaporanPage() {
                 ...formAkhir
             });
             toast({ title: 'Berhasil', description: 'Laporan akhir disubmit!' });
+            setIsEditingAkhir(false);
             loadAkhir(pendaftaran.id);
         } catch (err) {
             toast({ title: 'Gagal', description: err.message, variant: 'destructive' });
@@ -239,16 +273,35 @@ export default function LaporanPage() {
         }
     };
 
+    const handleEditAkhir = () => {
+        setIsEditingAkhir(true);
+        setFormAkhir({
+            fileUrl: laporanAkhir?.fileUrl || '',
+            finalUrl: laporanAkhir?.finalUrl || ''
+        });
+    };
+
+    const handleCancelEditAkhir = () => {
+        setIsEditingAkhir(false);
+        setFormAkhir({ fileUrl: '', finalUrl: '' });
+    };
+
     const handleSubmitMingguan = async (e) => {
         e.preventDefault();
         if (!pendaftaran) return;
         setLoading(true);
         try {
-            await api.post('/api/laporan/mingguan', {
-                pendaftaranId: pendaftaran.id,
-                ...formMingguan
-            });
-            toast({ title: 'Berhasil', description: 'Laporan mingguan disimpan!' });
+            if (editingMingguan) {
+                await api.put(`/api/laporan/mingguan/${editingMingguan.id}`, formMingguan);
+                toast({ title: 'Berhasil', description: 'Laporan mingguan diperbarui!' });
+                setEditingMingguan(null);
+            } else {
+                await api.post('/api/laporan/mingguan', {
+                    pendaftaranId: pendaftaran.id,
+                    ...formMingguan
+                });
+                toast({ title: 'Berhasil', description: 'Laporan mingguan disimpan!' });
+            }
             loadMingguan(pendaftaran.id);
             setFormMingguan({ mingguKe: '', fileUrl: '' });
         } catch (err) {
@@ -258,16 +311,64 @@ export default function LaporanPage() {
         }
     };
 
+    const handleEditMingguan = (item) => {
+        setEditingMingguan(item);
+        setFormMingguan({
+            mingguKe: item.mingguKe,
+            fileUrl: item.fileUrl
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleCancelEditMingguan = () => {
+        setEditingMingguan(null);
+        setFormMingguan({ mingguKe: '', fileUrl: '' });
+    };
+
     if (!pendaftaran) {
         return (
             <div className="p-8 text-center text-gray-500">
-                Anda belum memiliki pendaftaran PKL yang aktif. Silakan mendaftar terlebih dahulu.
+                Anda belum memiliki pendaftaran Magang yang aktif. Silakan mendaftar terlebih dahulu.
             </div>
         )
     }
 
     const harianTotalPages = Math.ceil(harianList.length / itemsPerPage);
     const harianPaginated = harianList.slice((harianPage - 1) * itemsPerPage, harianPage * itemsPerPage);
+
+    const getGroups = () => {
+        if (!pendaftaran || !pendaftaran.periode || !harianList.length) return [];
+
+        const startDate = new Date(pendaftaran.periode.tanggalMulai + 'T00:00:00');
+        const groups = {};
+
+        harianList.forEach(item => {
+            const itemDate = new Date(item.tanggal + 'T00:00:00');
+            const diffTime = itemDate - startDate;
+            // Handle day as 0-indexed offset from start date
+            const weekNum = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7)) + 1;
+
+            if (!groups[weekNum]) groups[weekNum] = [];
+            groups[weekNum].push(item);
+        });
+
+        // Sort weeks descending numerically
+        return Object.keys(groups)
+            .sort((a, b) => Number(b) - Number(a))
+            .map(week => ({
+                week,
+                items: groups[week].sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime())
+            }));
+    };
+
+    const groupedHarian = getGroups();
+
+    const toggleWeek = (week) => {
+        setExpandedWeeks(prev => ({
+            ...prev,
+            [week]: !prev[week]
+        }));
+    };
 
     const mingguanTotalPages = Math.ceil(mingguanList.length / itemsPerPage);
     const mingguanPaginated = mingguanList.slice((mingguanPage - 1) * itemsPerPage, mingguanPage * itemsPerPage);
@@ -291,7 +392,7 @@ export default function LaporanPage() {
                     onClick={() => setActiveTab('tengah')}
                     className={`px-4 py-2 border-b-2 transition-colors ${activeTab === 'tengah' ? 'border-primary text-primary font-bold' : 'border-transparent text-gray-500'}`}
                 >
-                    Laporan Tengah
+                    Laporan Kemajuan
                 </button>
                 <button
                     onClick={() => setActiveTab('akhir')}
@@ -300,6 +401,19 @@ export default function LaporanPage() {
                     Laporan Akhir
                 </button>
             </div>
+
+            {pendaftaran?.status === 'PENDING' && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-md mb-6 flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                        <p className="font-bold text-sm">Status Kegiatan: PENDING</p>
+                        <p className="text-xs">
+                            Anda belum dapat mengisi laporan harian, mingguan, atau kemajuan karena status kegiatan Anda belum aktif/disetujui.
+                            Mohon tunggu hingga status Anda divalidasi oleh admin.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             <motion.div
                 key={activeTab}
@@ -403,68 +517,107 @@ export default function LaporanPage() {
                                         )}
                                     </div>
 
-                                    <Button type="submit" className="w-full" disabled={loading}>
+                                    <Button type="submit" className="w-full" disabled={loading || pendaftaran?.status === 'PENDING'}>
                                         {loading ? 'Menyimpan...' : (editingLogbook ? 'Simpan Perubahan' : 'Simpan Laporan')}
                                     </Button>
                                 </form>
                             </CardContent>
                         </Card>
 
-                        <div className="space-y-4">
-                            <h3 className="font-semibold text-lg">Riwayat Laporan</h3>
-                            {harianPaginated.map((item) => (
-                                <Card key={item.id} className="bg-white">
-                                    <CardContent className="p-4">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <p className="font-bold text-gray-800">{item.tanggal}</p>
-                                                <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{item.kegiatan}</p>
-                                                {item.lokasi && (
-                                                    <div className="text-xs text-blue-600 mt-1 flex items-center gap-1">
-                                                        <MapPin className="h-3 w-3" /> {item.lokasi}
-                                                    </div>
-                                                )}
-                                                <div className="flex gap-2 mt-2">
-                                                    {item.status !== 'APPROVED' && (
-                                                        <Button variant="outline" size="sm" onClick={() => handleEdit(item)}>
-                                                            Edit
-                                                        </Button>
-                                                    )}
-                                                    {item.feedback && (
-                                                        <div className="bg-red-50 text-red-600 p-2 rounded text-sm flex-1">
-                                                            <strong>Feedback:</strong> {item.feedback}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col items-end gap-2">
-                                                <span className={`text-xs px-2 py-1 rounded-full ${item.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                                                    {item.status}
-                                                </span>
-                                                {item.foto && (
-                                                    <a href={`${process.env.NEXT_PUBLIC_API_URL}${item.foto}`} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline flex items-center mt-1">
-                                                        <Camera className="h-3 w-3 mr-1" /> FOTO
-                                                    </a>
-                                                )}
-                                            </div>
+                        <div className="space-y-6">
+                            <h3 className="font-semibold text-lg flex items-center justify-between">
+                                <span>Riwayat Laporan</span>
+                                <span className="text-sm font-normal text-gray-500">{harianList.length} logbook</span>
+                            </h3>
+
+                            {groupedHarian.length === 0 && (
+                                <p className="text-center text-gray-500 py-8 bg-gray-50 rounded-lg border-2 border-dashed">Belum ada riwayat laporan.</p>
+                            )}
+
+                            {groupedHarian.map((group) => (
+                                <div key={group.week} className="space-y-3">
+                                    <button
+                                        onClick={() => toggleWeek(group.week)}
+                                        className="w-full flex items-center gap-2 group hover:opacity-80 transition-opacity"
+                                    >
+                                        <div className="h-px bg-gray-200 flex-1"></div>
+                                        <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 rounded-full border border-gray-200 shadow-sm">
+                                            {expandedWeeks[group.week] ? <ChevronDown className="h-3.5 w-3.5 text-primary" /> : <ChevronRight className="h-3.5 w-3.5 text-gray-400" />}
+                                            <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Minggu {group.week}</span>
+                                            <span className="text-[10px] text-gray-400 font-normal">({group.items.length})</span>
                                         </div>
-                                    </CardContent>
-                                </Card>
+                                        <div className="h-px bg-gray-200 flex-1"></div>
+                                    </button>
+
+                                    {expandedWeeks[group.week] && (
+                                        <div className="space-y-3 pt-1">
+                                            {group.items.map((item) => (
+                                                <Card key={item.id} className="bg-white hover:shadow-md transition-shadow border-l-4 border-l-primary/20">
+                                                    <CardContent className="p-4">
+                                                        <div className="flex justify-between items-start">
+                                                            <div className="flex-1">
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <CalendarIcon className="h-3.5 w-3.5 text-primary/60" />
+                                                                    <p className="font-bold text-gray-800">{new Date(item.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                                                </div>
+                                                                <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap leading-relaxed">{item.kegiatan}</p>
+                                                                {item.lokasi && (
+                                                                    <div className="text-xs text-blue-600 mt-2 flex items-center gap-1 bg-blue-50 w-fit px-2 py-0.5 rounded">
+                                                                        <MapPin className="h-3 w-3" /> {item.lokasi}
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex gap-2 mt-4">
+                                                                    {item.status !== 'APPROVED' && (
+                                                                        <Button variant="outline" size="sm" onClick={() => handleEdit(item)} className="h-8">
+                                                                            Edit
+                                                                        </Button>
+                                                                    )}
+                                                                    {item.feedback && (
+                                                                        <div className="bg-red-50 text-red-600 p-2 rounded text-xs flex-1 border border-red-100">
+                                                                            <strong className="block mb-1">Feedback Dosen:</strong>
+                                                                            {item.feedback}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex flex-col items-end gap-2 ml-4">
+                                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter ${item.status === 'APPROVED' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-yellow-100 text-yellow-700 border border-yellow-200'}`}>
+                                                                    {item.status}
+                                                                </span>
+                                                                {item.foto && (
+                                                                    <a href={`${process.env.NEXT_PUBLIC_API_URL}${item.foto}`} target="_blank" rel="noreferrer" className="group">
+                                                                        <div className="w-14 h-14 rounded-md border bg-gray-50 flex items-center justify-center relative overflow-hidden ring-1 ring-gray-200">
+                                                                            <img src={`${process.env.NEXT_PUBLIC_API_URL}${item.foto}`} alt="Logbook" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                                                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                <Camera className="h-4 w-4 text-white" />
+                                                                            </div>
+                                                                        </div>
+                                                                    </a>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             ))}
-                            <Pagination
-                                currentPage={harianPage}
-                                totalPages={harianTotalPages}
-                                onPageChange={setHarianPage}
-                            />
                         </div>
                     </div>
                 ) : activeTab === 'mingguan' ? (
                     <div className="grid md:grid-cols-2 gap-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Upload Laporan Mingguan</CardTitle>
+                                <CardTitle>{editingMingguan ? 'Edit Laporan Mingguan' : 'Upload Laporan Mingguan'}</CardTitle>
                             </CardHeader>
                             <CardContent>
+                                {editingMingguan && (
+                                    <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded mb-4 flex justify-between items-center">
+                                        <span>Sedang mengedit Minggu ke-{editingMingguan.mingguKe}</span>
+                                        <Button variant="outline" size="sm" onClick={handleCancelEditMingguan}>Batal</Button>
+                                    </div>
+                                )}
                                 {message && <p className="text-green-600 mb-2 text-sm">{message}</p>}
                                 <form onSubmit={handleSubmitMingguan} className="space-y-4">
                                     <div className="space-y-2">
@@ -487,8 +640,8 @@ export default function LaporanPage() {
                                             required
                                         />
                                     </div>
-                                    <Button type="submit" className="w-full" disabled={loading}>
-                                        Simpan
+                                    <Button type="submit" className="w-full" disabled={loading || pendaftaran?.status === 'PENDING'}>
+                                        {loading ? 'Menyimpan...' : (editingMingguan ? 'Simpan Perubahan' : 'Simpan')}
                                     </Button>
                                 </form>
                             </CardContent>
@@ -504,6 +657,7 @@ export default function LaporanPage() {
                                                 <th className="p-3">Minggu</th>
                                                 <th className="p-3">Link</th>
                                                 <th className="p-3">Status</th>
+                                                <th className="p-3 text-right">Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -530,6 +684,17 @@ export default function LaporanPage() {
                                                             {item.status}
                                                         </span>
                                                     </td>
+                                                    <td className="p-3 text-right">
+                                                        {item.status !== 'APPROVED' && (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="xs"
+                                                                onClick={() => handleEditMingguan(item)}
+                                                            >
+                                                                Edit
+                                                            </Button>
+                                                        )}
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -544,10 +709,15 @@ export default function LaporanPage() {
                         </div>
                     </div>
                 ) : activeTab === 'tengah' ? (
-                    <>
-                        <Card className="max-w-md mx-auto">
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <Card>
                             <CardHeader>
-                                <CardTitle>Upload Laporan Tengah (50%)</CardTitle>
+                                <div className="flex justify-between items-center">
+                                    <CardTitle>{isEditingTengah ? 'Edit Laporan Kemajuan (50%)' : 'Upload Laporan Kemajuan (50%)'}</CardTitle>
+                                    {isEditingTengah && (
+                                        <Button variant="ghost" size="sm" onClick={handleCancelEditTengah}>Batal</Button>
+                                    )}
+                                </div>
                             </CardHeader>
                             <CardContent>
                                 {message && <p className="text-green-600 mb-2 text-sm">{message}</p>}
@@ -565,42 +735,78 @@ export default function LaporanPage() {
                                             />
                                         </div>
                                     </div>
-                                    <Button type="submit" className="w-full" disabled={loading}>
-                                        Submit Laporan
+                                    <Button type="submit" className="w-full" disabled={loading || pendaftaran?.status === 'PENDING'}>
+                                        {loading ? 'Menyimpan...' : (isEditingTengah ? 'Simpan Perubahan' : 'Submit Laporan')}
                                     </Button>
                                 </form>
                             </CardContent>
                         </Card>
-                        <div className="mt-6">
+
+                        <div className="space-y-4">
+                            <h3 className="font-semibold text-lg uppercase tracking-tight text-gray-500">Riwayat Kemajuan</h3>
+                            <Card className="bg-white overflow-hidden shadow-sm">
+                                <CardContent className="p-0">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-gray-50 text-gray-700 font-medium">
+                                            <tr>
+                                                <th className="p-3">Tipe</th>
+                                                <th className="p-3">Link / Dokumen</th>
+                                                <th className="p-3">Status</th>
+                                                <th className="p-3 text-right">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {!laporanTengah ? (
+                                                <tr>
+                                                    <td colSpan="4" className="p-4 text-center text-gray-500 italic">Belum ada laporan disubmit.</td>
+                                                </tr>
+                                            ) : (
+                                                <tr className="border-t hover:bg-gray-50 transition-colors">
+                                                    <td className="p-3 font-medium">Laporan Kemajuan</td>
+                                                    <td className="p-3">
+                                                        <a href={laporanTengah.fileUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline inline-flex items-center gap-1 font-semibold">
+                                                            <ExternalLink className="h-3 w-3" /> Buka Link
+                                                        </a>
+                                                    </td>
+                                                    <td className="p-3">
+                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter ${laporanTengah.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                            {laporanTengah.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-3 text-right">
+                                                        {laporanTengah.status !== 'APPROVED' && (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="xs"
+                                                                onClick={handleEditTengah}
+                                                            >
+                                                                Edit
+                                                            </Button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </CardContent>
+                            </Card>
                             {laporanTengah && (
-                                <Card className="max-w-md mx-auto bg-blue-50 border-blue-100">
-                                    <CardContent className="pt-6">
-                                        <h3 className="font-semibold text-blue-900 mb-2">Laporan Submitted</h3>
-                                        <div className="space-y-2 text-sm">
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Status:</span>
-                                                <span className="font-medium">{laporanTengah.status}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-gray-600">File:</span>
-                                                <a href={laporanTengah.fileUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
-                                                    Buka Link
-                                                </a>
-                                            </div>
-                                            <div className="text-xs text-gray-500 pt-2 text-right">
-                                                Last updated: {new Date(laporanTengah.updatedAt).toLocaleDateString()}
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                <div className="text-[10px] text-gray-400 text-right italic">
+                                    Terakhir diperbarui: {new Date(laporanTengah.updatedAt).toLocaleString('id-ID')}
+                                </div>
                             )}
                         </div>
-                    </>
+                    </div>
                 ) : (
-                    <>
-                        <Card className="max-w-md mx-auto">
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <Card>
                             <CardHeader>
-                                <CardTitle>Upload Laporan Akhir (100%)</CardTitle>
+                                <div className="flex justify-between items-center">
+                                    <CardTitle>{isEditingAkhir ? 'Edit Laporan Akhir (100%)' : 'Upload Laporan Akhir (100%)'}</CardTitle>
+                                    {isEditingAkhir && (
+                                        <Button variant="ghost" size="sm" onClick={handleCancelEditAkhir}>Batal</Button>
+                                    )}
+                                </div>
                             </CardHeader>
                             <CardContent>
                                 {message && <p className="text-green-600 mb-2 text-sm">{message}</p>}
@@ -630,46 +836,80 @@ export default function LaporanPage() {
                                             />
                                         </div>
                                     </div>
-                                    <Button type="submit" className="w-full" disabled={loading}>
-                                        Submit Laporan Akhir
+                                    <Button type="submit" className="w-full" disabled={loading || pendaftaran?.status === 'PENDING'}>
+                                        {loading ? 'Menyimpan...' : (isEditingAkhir ? 'Simpan Perubahan' : 'Submit Laporan Akhir')}
                                     </Button>
                                 </form>
                             </CardContent>
                         </Card>
 
-                        <div className="mt-6">
-                            {laporanAkhir && (
-                                <Card className="max-w-md mx-auto bg-purple-50 border-purple-100">
-                                    <CardContent className="pt-6">
-                                        <h3 className="font-semibold text-purple-900 mb-2">Laporan Akhir Submitted</h3>
-                                        <div className="space-y-3 text-sm">
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Status:</span>
-                                                <span className="font-medium bg-purple-100 px-2 py-0.5 rounded text-purple-800">{laporanAkhir.status}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center bg-white p-2 rounded border">
-                                                <span className="text-gray-600">Laporan Akhir:</span>
-                                                <a href={laporanAkhir.fileUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-medium">
-                                                    Buka
-                                                </a>
-                                            </div>
-                                            {laporanAkhir.finalUrl && (
-                                                <div className="flex justify-between items-center bg-white p-2 rounded border">
-                                                    <span className="text-gray-600">Laporan Final:</span>
-                                                    <a href={laporanAkhir.finalUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-medium">
-                                                        Buka
-                                                    </a>
-                                                </div>
+                        <div className="space-y-4">
+                            <h3 className="font-semibold text-lg uppercase tracking-tight text-gray-500">Riwayat Laporan Akhir</h3>
+                            <Card className="bg-white overflow-hidden shadow-sm">
+                                <CardContent className="p-0">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-gray-50 text-gray-700 font-medium">
+                                            <tr>
+                                                <th className="p-3">Tipe</th>
+                                                <th className="p-3">Link / Dokumen</th>
+                                                <th className="p-3">Status</th>
+                                                <th className="p-3 text-right">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {!laporanAkhir ? (
+                                                <tr>
+                                                    <td colSpan="4" className="p-4 text-center text-gray-500 italic">Belum ada laporan disubmit.</td>
+                                                </tr>
+                                            ) : (
+                                                <>
+                                                    <tr className="border-t hover:bg-gray-50 transition-colors">
+                                                        <td className="p-3 font-medium">Laporan Akhir (100%)</td>
+                                                        <td className="p-3">
+                                                            <a href={laporanAkhir.fileUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline inline-flex items-center gap-1 font-semibold">
+                                                                <FileText className="h-3 w-3" /> Buka Laporan
+                                                            </a>
+                                                        </td>
+                                                        <td className="p-3" rowSpan={laporanAkhir.finalUrl ? 2 : 1}>
+                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter ${laporanAkhir.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
+                                                                {laporanAkhir.status}
+                                                            </span>
+                                                        </td>
+                                                        <td className="p-3 text-right" rowSpan={laporanAkhir.finalUrl ? 2 : 1}>
+                                                            {laporanAkhir.status !== 'APPROVED' && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="xs"
+                                                                    onClick={handleEditAkhir}
+                                                                >
+                                                                    Edit
+                                                                </Button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                    {laporanAkhir.finalUrl && (
+                                                        <tr className="border-t hover:bg-gray-50 transition-colors bg-purple-50/20">
+                                                            <td className="p-3 font-medium text-purple-700 italic">Laporan Final</td>
+                                                            <td className="p-3">
+                                                                <a href={laporanAkhir.finalUrl} target="_blank" rel="noreferrer" className="text-purple-600 hover:underline inline-flex items-center gap-1 font-semibold">
+                                                                    <CheckCircle className="h-3 w-3" /> Buka Final
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </>
                                             )}
-                                            <div className="text-xs text-gray-500 pt-2 text-right">
-                                                Last updated: {new Date(laporanAkhir.updatedAt).toLocaleDateString()}
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                        </tbody>
+                                    </table>
+                                </CardContent>
+                            </Card>
+                            {laporanAkhir && (
+                                <div className="text-[10px] text-gray-400 text-right italic">
+                                    Terakhir diperbarui: {new Date(laporanAkhir.updatedAt).toLocaleString('id-ID')}
+                                </div>
                             )}
                         </div>
-                    </>
+                    </div>
                 )}
             </motion.div>
         </div >

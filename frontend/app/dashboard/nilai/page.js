@@ -37,7 +37,7 @@ export default function NilaiPage() {
     if (!pendaftaran) {
         return (
             <div className="p-8 text-center text-gray-500">
-                Anda belum memiliki pendaftaran PKL yang aktif untuk melihat nilai.
+                Anda belum memiliki pendaftaran Magang yang aktif untuk melihat nilai.
             </div>
         );
     }
@@ -52,7 +52,7 @@ export default function NilaiPage() {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold">Transkrip Nilai PKL</h1>
+            <h1 className="text-2xl font-bold">Transkrip Nilai Magang</h1>
 
             <div className="grid md:grid-cols-2 gap-6">
                 <Card>
@@ -61,19 +61,25 @@ export default function NilaiPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex justify-between border-b pb-2">
-                            <span>Nilai Logbook Harian (30%)</span>
-                            <span className="font-bold">{nilai.details.HARIAN || 0}</span>
+                            <span>{(nilai.tipe === 'MBKM' || nilai.tipe === 'MBKM2') ? 'Nilai Logbook (25%)' : 'Nilai Logbook Harian (30%)'}</span>
+                            <span className="font-bold">{(nilai.tipe === 'MBKM' || nilai.tipe === 'MBKM2') ? (nilai.details.LOGBOOK || 0) : (nilai.details.HARIAN || 0)}</span>
                         </div>
+                        {(nilai.tipe === 'MBKM' || nilai.tipe === 'MBKM2') && (
+                            <div className="flex justify-between border-b pb-2">
+                                <span>Nilai Monev (20%)</span>
+                                <span className="font-bold">{nilai.details.MONEV || 0}</span>
+                            </div>
+                        )}
                         <div className="flex justify-between border-b pb-2">
-                            <span>Nilai Pembimbing (30%)</span>
+                            <span>Nilai Pembimbing ({(nilai.tipe === 'MBKM' || nilai.tipe === 'MBKM2') ? '20%' : '30%'})</span>
                             <span className="font-bold">{nilai.details.PEMBIMBING || 0}</span>
                         </div>
                         <div className="flex justify-between border-b pb-2">
-                            <span>Nilai Penguji/Sidang ({nilai.tipe === 'PKL1' ? '20%' : '25%'})</span>
+                            <span>Nilai Penguji/Sidang ({(nilai.tipe === 'MBKM' || nilai.tipe === 'MBKM2') ? '15%' : (nilai.tipe === 'PKL1' ? '20%' : '25%')})</span>
                             <span className="font-bold">{nilai.details.PENGUJI || 0}</span>
                         </div>
                         <div className="flex justify-between border-b pb-2">
-                            <span>Nilai Instansi ({nilai.tipe === 'PKL1' ? '20%' : '15%'})</span>
+                            <span>Nilai Instansi ({(nilai.tipe === 'MBKM' || nilai.tipe === 'MBKM2') ? '20%' : (nilai.tipe === 'PKL1' ? '20%' : '15%')})</span>
                             <span className="font-bold">{nilai.details.INSTANSI || 0}</span>
                         </div>
                     </CardContent>
@@ -94,16 +100,18 @@ export default function NilaiPage() {
                 </Card>
             </div>
 
-            {nilai.revisi && (
-                <Card className="mt-6 border-l-4 border-l-yellow-500">
-                    <CardHeader>
-                        <CardTitle>Revisi dari Dosen Penguji</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-gray-700 whitespace-pre-line">{nilai.revisi}</p>
-                    </CardContent>
-                </Card>
-            )}
-        </div>
+            {
+                nilai.revisi && (
+                    <Card className="mt-6 border-l-4 border-l-yellow-500">
+                        <CardHeader>
+                            <CardTitle>Revisi dari Dosen Penguji</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-gray-700 whitespace-pre-line">{nilai.revisi}</p>
+                        </CardContent>
+                    </Card>
+                )
+            }
+        </div >
     );
 }

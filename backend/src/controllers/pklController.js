@@ -237,6 +237,7 @@ exports.getBimbingan = async (req, res) => {
                     id: p.id,
                     mahasiswa: p.mahasiswa,
                     instansi: p.instansi,
+                    periode: p.periode, // [NEW] Return the whole period object
                     periodeId: p.periodeId, // [NEW] Needed for filtering
                     tipe: p.tipe,
                     judulProject: p.judulProject,
@@ -368,7 +369,7 @@ exports.getDashboardStats = async (req, res) => {
         let stats = {
             periode: activePeriode,
             totalMahasiswa: 0,
-            breakdown: { PKL1: 0, PKL2: 0, MBKM: 0 },
+            breakdown: { PKL1: 0, PKL2: 0, MBKM: 0, MBKM2: 0 },
             statusStats: [], // Legacy format just in case
             chartData: [], // New format for grouped bar chart
             recent: []
@@ -380,14 +381,75 @@ exports.getDashboardStats = async (req, res) => {
                 if (user && user.dosen) {
                     const dosenId = user.dosen.id;
 
-                    // Count Bimbingan
-                    const bimbinganCount = await Pendaftaran.count({
+                    const pendaftarans = await Pendaftaran.findAll({
                         where: {
                             periodeId: activePeriode.id,
                             dosenPembimbingId: dosenId,
                             status: 'ACTIVE'
-                        }
+                        },
+                        include: ['periode', 'mahasiswa', 'instansi']
                     });
+
+                    const bimbinganCount = pendaftarans.length;
+                    const bimbinganList = pendaftarans.map(p => ({
+                        id: p.id,
+                        nama: p.mahasiswa?.nama,
+                        nim: p.mahasiswa?.nim,
+                        noHp: p.mahasiswa?.noHp,
+                        instansi: p.instansi?.nama // Already included in some queries, but pklRes/me usually has it
+                    }));
+
+                    // Calculate detailed logbook stats
+                    let logbookStats = {
+                        daily: { target: 0, filled: 0, pending: 0 },
+                        weekly: { target: 0, filled: 0, pending: 0 }
+                    };
+
+                    const now = new Date();
+                    const activeEnd = activePeriode.tanggalSelesai ? new Date(activePeriode.tanggalSelesai) : now;
+                    const effectiveEnd = now < activeEnd ? now : activeEnd;
+
+                    for (const p of pendaftarans) {
+                        const pId = p.id;
+
+                        // Daily Stats
+                        const filledDaily = await db.LaporanHarian.count({ where: { pendaftaranId: pId } });
+                        const pendingDaily = await db.LaporanHarian.count({
+                            where: {
+                                pendaftaranId: pId,
+                                status: 'SUBMITTED' // Assuming SUBMITTED = needs response
+                            }
+                        });
+
+                        if (p.periode && p.periode.tanggalMulai) {
+                            const start = new Date(p.periode.tanggalMulai);
+                            if (start <= effectiveEnd) {
+                                const diffDays = Math.ceil(Math.abs(effectiveEnd - start) / (1000 * 60 * 60 * 24)) + 1;
+                                logbookStats.daily.target += diffDays;
+                            }
+                        }
+                        logbookStats.daily.filled += filledDaily;
+                        logbookStats.daily.pending += pendingDaily;
+
+                        // Weekly Stats
+                        const filledWeekly = await db.LaporanMingguan.count({ where: { pendaftaranId: pId } });
+                        const pendingWeekly = await db.LaporanMingguan.count({
+                            where: {
+                                pendaftaranId: pId,
+                                status: 'PENDING' // Weekly model uses PENDING as default
+                            }
+                        });
+
+                        if (p.periode && p.periode.tanggalMulai) {
+                            const start = new Date(p.periode.tanggalMulai);
+                            if (start <= effectiveEnd) {
+                                const diffWeeks = Math.ceil(Math.ceil(Math.abs(effectiveEnd - start) / (1000 * 60 * 60 * 24)) / 7);
+                                logbookStats.weekly.target += diffWeeks;
+                            }
+                        }
+                        logbookStats.weekly.filled += filledWeekly;
+                        logbookStats.weekly.pending += pendingWeekly;
+                    }
 
                     // Count Ujian (Sidang)
                     const ujianCount = await db.Sidang.count({
@@ -403,8 +465,68 @@ exports.getDashboardStats = async (req, res) => {
                         userRole: 'DOSEN',
                         periode: activePeriode,
                         bimbinganCount,
-                        ujianCount
+                        ujianCount,
+                        logbookStats,
+                        bimbinganList
                     });
+                }
+            } else if (req.userRole === 'MAHASISWA') {
+                const user = await User.findByPk(req.userId, { include: ['mahasiswa'] });
+                if (user && user.mahasiswa) {
+                    const pendaftaran = await Pendaftaran.findOne({
+                        where: {
+                            mahasiswaId: user.mahasiswa.id,
+                            periodeId: activePeriode.id,
+                            status: 'ACTIVE'
+                        },
+                        include: ['periode']
+                    });
+
+                    if (pendaftaran) {
+                        const pId = pendaftaran.id;
+                        const logbookStats = {
+                            daily: { target: 0, filled: 0, pending: 0 },
+                            weekly: { target: 0, filled: 0, pending: 0 }
+                        };
+
+                        const now = new Date();
+                        const activeEnd = activePeriode.tanggalSelesai ? new Date(activePeriode.tanggalSelesai) : now;
+                        const effectiveEnd = now < activeEnd ? now : activeEnd;
+
+                        // Daily
+                        logbookStats.daily.filled = await db.LaporanHarian.count({ where: { pendaftaranId: pId } });
+                        logbookStats.daily.pending = await db.LaporanHarian.count({
+                            where: { pendaftaranId: pId, status: 'SUBMITTED' }
+                        });
+
+                        if (pendaftaran.periode && pendaftaran.periode.tanggalMulai) {
+                            const start = new Date(pendaftaran.periode.tanggalMulai);
+                            if (start <= effectiveEnd) {
+                                const diffDays = Math.ceil(Math.abs(effectiveEnd - start) / (1000 * 60 * 60 * 24)) + 1;
+                                logbookStats.daily.target = diffDays;
+                            }
+                        }
+
+                        // Weekly
+                        logbookStats.weekly.filled = await db.LaporanMingguan.count({ where: { pendaftaranId: pId } });
+                        logbookStats.weekly.pending = await db.LaporanMingguan.count({
+                            where: { pendaftaranId: pId, status: 'PENDING' }
+                        });
+
+                        if (pendaftaran.periode && pendaftaran.periode.tanggalMulai) {
+                            const start = new Date(pendaftaran.periode.tanggalMulai);
+                            if (start <= effectiveEnd) {
+                                const diffWeeks = Math.ceil(Math.ceil(Math.abs(effectiveEnd - start) / (1000 * 60 * 60 * 24)) / 7);
+                                logbookStats.weekly.target = diffWeeks;
+                            }
+                        }
+
+                        return res.json({
+                            userRole: 'MAHASISWA',
+                            periode: activePeriode,
+                            logbookStats
+                        });
+                    }
                 }
             }
 
@@ -418,7 +540,7 @@ exports.getDashboardStats = async (req, res) => {
 
             const statuses = ['PENDING', 'APPROVED', 'ACTIVE', 'REJECTED', 'COMPLETED'];
             const chartMap = statuses.reduce((acc, status) => {
-                acc[status] = { name: status, PKL1: 0, PKL2: 0, MBKM: 0 };
+                acc[status] = { name: status, PKL1: 0, PKL2: 0, MBKM: 0, MBKM2: 0 };
                 return acc;
             }, {});
 
@@ -426,11 +548,13 @@ exports.getDashboardStats = async (req, res) => {
                 if (p.tipe === 'PKL1') stats.breakdown.PKL1++;
                 else if (p.tipe === 'PKL2') stats.breakdown.PKL2++;
                 else if (p.tipe === 'MBKM') stats.breakdown.MBKM++;
+                else if (p.tipe === 'MBKM2') stats.breakdown.MBKM2++;
 
                 if (chartMap[p.status]) {
                     if (p.tipe === 'PKL1') chartMap[p.status].PKL1++;
                     else if (p.tipe === 'PKL2') chartMap[p.status].PKL2++;
                     else if (p.tipe === 'MBKM') chartMap[p.status].MBKM++;
+                    else if (p.tipe === 'MBKM2') chartMap[p.status].MBKM2++;
                 }
             });
 
@@ -438,7 +562,7 @@ exports.getDashboardStats = async (req, res) => {
 
             stats.statusStats = stats.chartData.map(item => ({
                 name: item.name,
-                value: item.PKL1 + item.PKL2 + item.MBKM
+                value: item.PKL1 + item.PKL2 + item.MBKM + item.MBKM2
             }));
 
             stats.recent = pendaftarans.slice(0, 5).map(p => ({
