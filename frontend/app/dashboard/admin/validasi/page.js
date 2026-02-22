@@ -29,6 +29,7 @@ export default function AdminValidasiPage() {
     const [dosens, setDosens] = useState([]);
     const [mahasiswas, setMahasiswas] = useState([]);
     const [instansis, setInstansis] = useState([]);
+    const [periodes, setPeriodes] = useState([]); // [NEW]
 
     const [loading, setLoading] = useState(true);
     const [selectedReg, setSelectedReg] = useState(null);
@@ -48,6 +49,7 @@ export default function AdminValidasiPage() {
 
     const [searchQuery, setSearchQuery] = useState('');
     const [filterTipe, setFilterTipe] = useState('ALL');
+    const [selectedPeriode, setSelectedPeriode] = useState(''); // [NEW]
     const [pageSize, setPageSize] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
     const [isImporting, setIsImporting] = useState(false);
@@ -58,12 +60,20 @@ export default function AdminValidasiPage() {
 
     const loadData = async () => {
         try {
-            const [resReg, resUsers, resInstansi] = await Promise.all([
+            const [resReg, resUsers, resInstansi, resPeriode] = await Promise.all([
                 api.get('/api/pkl/all'),
                 api.get('/api/users'), // Get all users for filtering
-                api.get('/api/instansi')
+                api.get('/api/instansi'),
+                api.get('/api/periode') // [NEW] Fetch periods
             ]);
             setRegistrations(resReg.data);
+            setPeriodes(resPeriode.data);
+
+            // [NEW] Set default active period if not selected
+            const active = resPeriode.data.find(p => p.isActive);
+            if (active && !selectedPeriode) {
+                setSelectedPeriode(String(active.id));
+            }
 
             // Deduplicate users to prevent key warnings
             const uniqueUsers = Array.from(new Map(resUsers.data.map(u => [u.id, u])).values());
@@ -212,6 +222,11 @@ export default function AdminValidasiPage() {
     };
 
     const filteredRegistrations = registrations.filter(reg => {
+        // [NEW] Periode Filter
+        if (selectedPeriode && selectedPeriode !== 'ALL' && String(reg.periodeId) !== String(selectedPeriode)) {
+            return false;
+        }
+
         // Search Filter
         const query = searchQuery.toLowerCase();
         const mhsName = reg.mahasiswa?.nama?.toLowerCase() || '';
@@ -314,14 +329,30 @@ export default function AdminValidasiPage() {
 
             {/* Filters Section */}
             <div className="bg-white p-4 rounded-lg shadow-sm border flex flex-col md:flex-row gap-4 justify-between items-center">
-                <div className="relative w-full md:w-1/3">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                    <Input
-                        placeholder="Cari Mahasiswa, NIM, atau Instansi..."
-                        className="pl-9"
-                        value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
-                    />
+                <div className="relative w-full md:w-1/3 flex gap-2">
+                    <Select value={selectedPeriode} onValueChange={setSelectedPeriode}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Pilih Periode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {/* [NEW] All Periods Option */}
+                            <SelectItem value="ALL">Semua Periode</SelectItem>
+                            {periodes.map(p => (
+                                <SelectItem key={p.id} value={String(p.id)}>
+                                    {p.nama} {p.isActive ? '(Aktif)' : ''}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <div className="relative w-full">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                        <Input
+                            placeholder="Cari Mahasiswa, NIM, atau Instansi..."
+                            className="pl-9"
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                        />
+                    </div>
                 </div>
 
                 <div className="flex gap-2 w-full md:w-auto">
@@ -380,6 +411,10 @@ export default function AdminValidasiPage() {
                                 <td className="p-4">
                                     <div className="font-bold text-gray-900">{reg.mahasiswa?.nama}</div>
                                     <div className="text-gray-500 text-xs">{reg.mahasiswa?.nim}</div>
+                                    {/* Show period name if viewing all */}
+                                    {selectedPeriode === 'ALL' && reg.periode && (
+                                        <div className="text-[10px] text-gray-400 mt-1">{reg.periode.nama}</div>
+                                    )}
                                 </td>
                                 <td className="p-4">
                                     <div className="text-sm">{reg.mahasiswa?.prodi?.nama || '-'}</div>
@@ -429,6 +464,8 @@ export default function AdminValidasiPage() {
                                         onClick={() => handleProcess(reg)}
                                         variant="outline"
                                         className="hover:border-primary hover:text-primary transition-all"
+                                        disabled={reg.periode && !reg.periode.isActive} // [NEW] Disable if inactive period
+                                        title={reg.periode && !reg.periode.isActive ? "Periode tidak aktif" : "Validasi Pendaftaran"}
                                     >
                                         Process
                                     </Button>

@@ -21,9 +21,16 @@ import {
 export function Topbar() {
     const pathname = usePathname();
     const [role, setRole] = useState(null);
+    const [user, setUser] = useState(null);
 
     useEffect(() => {
         setRole(localStorage.getItem('role'));
+        try {
+            const userStored = JSON.parse(localStorage.getItem('user'));
+            setUser(userStored);
+        } catch (e) {
+            console.error("Failed to parse user data", e);
+        }
     }, []);
 
     return (
@@ -82,13 +89,17 @@ export function Topbar() {
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="relative h-10 w-10 rounded-full bg-primary/10 border border-primary/20 p-0 hover:bg-primary/20 transition-colors">
-                            <span className="text-primary font-bold text-lg">{role ? role[0] : 'U'}</span>
+                            <span className="text-primary font-bold text-lg">
+                                {user?.nama ? user.nama[0].toUpperCase() : (role ? role[0] : 'U')}
+                            </span>
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56" align="end" forceMount>
                         <DropdownMenuLabel className="font-normal">
                             <div className="flex flex-col space-y-1">
-                                <p className="text-sm font-medium leading-none">User Account</p>
+                                <p className="text-sm font-medium leading-none">
+                                    {user?.nama || role || 'User'}
+                                </p>
                                 <p className="text-xs leading-none text-muted-foreground">
                                     {role}
                                 </p>

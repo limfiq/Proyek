@@ -31,6 +31,7 @@ const upload = multer({
 });
 
 router.post('/laporan/harian', verifyToken, upload.single('foto'), laporanController.createHarian);
+router.put('/laporan/harian/:id', verifyToken, upload.single('foto'), laporanController.updateHarian); // [NEW]
 router.get('/laporan/harian', verifyToken, laporanController.listHarian); // ?pendaftaranId=x
 router.put('/laporan/harian/:id/approve', verifyToken, laporanController.approveHarian);
 router.put('/laporan/harian/:id/feedback', verifyToken, laporanController.updateFeedbackHarian);

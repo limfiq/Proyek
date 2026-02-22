@@ -34,6 +34,8 @@ export default function AdminSidangPage() {
     const [pendaftarans, setPendaftarans] = useState([]);
     const [dosens, setDosens] = useState([]);
     const [sidangs, setSidangs] = useState([]);
+    const [periodes, setPeriodes] = useState([]); // [NEW]
+    const [selectedPeriode, setSelectedPeriode] = useState(''); // [NEW]
     const [selectedStudentId, setSelectedStudentId] = useState(null); // ID or null
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [form, setForm] = useState({ dosenPengujiId: '', tanggal: '', ruang: '', sesi: '', status: 'BELUM' });
@@ -46,10 +48,11 @@ export default function AdminSidangPage() {
 
     const loadData = async () => {
         try {
-            const [resPkl, resDosens, resSidang] = await Promise.all([
+            const [resPkl, resDosens, resSidang, resPeriode] = await Promise.all([
                 api.get('/api/pkl/all'),
                 api.get('/api/users?role=DOSEN'),
-                api.get('/api/sidang/all')
+                api.get('/api/sidang/all'),
+                api.get('/api/periode') // [NEW]
             ]);
 
             const eligible = resPkl.data.filter(p => p.status === 'ACTIVE' || p.status === 'APPROVED');
@@ -59,6 +62,13 @@ export default function AdminSidangPage() {
             setDosens(dosenList);
 
             setSidangs(resSidang.data);
+            setPeriodes(resPeriode.data);
+
+            // [NEW] Set default active period
+            const active = resPeriode.data.find(p => p.isActive);
+            if (active && !selectedPeriode) {
+                setSelectedPeriode(String(active.id));
+            }
         } catch (err) {
             console.error(err);
         }
@@ -251,6 +261,11 @@ export default function AdminSidangPage() {
         const matchesSearch = mhsName.includes(query) || mhsNim.includes(query);
         const matchesTipe = filterTipe === 'ALL' || reg.tipe === filterTipe;
 
+        // [NEW] Periode Filter
+        if (selectedPeriode && selectedPeriode !== 'ALL' && String(reg.periodeId) !== String(selectedPeriode)) {
+            return false;
+        }
+
         const sidang = getSidangInfo(reg.id);
         // Status checks: 
         // DONE = Sidang exists AND status === 'SUDAH'
@@ -354,6 +369,22 @@ export default function AdminSidangPage() {
                         onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                     />
                 </div>
+                {/* [NEW] Periode Filter */}
+                <div className="w-full md:w-auto">
+                    <Select value={selectedPeriode} onValueChange={setSelectedPeriode}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Pilih Periode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">Semua Periode</SelectItem>
+                            {periodes.map(p => (
+                                <SelectItem key={p.id} value={String(p.id)}>
+                                    {p.nama} {p.isActive ? '(Aktif)' : ''}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
                 <div className="flex gap-2 w-full md:w-auto">
                     <Select value={filterTipe} onValueChange={val => { setFilterTipe(val); setCurrentPage(1); }}>
                         <SelectTrigger className="w-[120px]">
@@ -454,7 +485,14 @@ export default function AdminSidangPage() {
                                         )}
                                     </td>
                                     <td className="p-4 text-right no-print">
-                                        <Button size="sm" variant="outline" onClick={() => handleEdit(reg.id)} className="hover:text-primary hover:border-primary">
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => handleEdit(reg.id)}
+                                            className="hover:text-primary hover:border-primary"
+                                            disabled={reg.periode && !reg.periode.isActive} // [NEW] Disable if inactive
+                                            title={reg.periode && !reg.periode.isActive ? "Periode tidak aktif" : "Atur/Edit Jadwal"}
+                                        >
                                             {sidang ? 'Edit Jadwal' : 'Atur Jadwal'}
                                         </Button>
                                     </td>
@@ -548,7 +586,7 @@ export default function AdminSidangPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </div >
     );
 }
 

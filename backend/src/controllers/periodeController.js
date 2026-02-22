@@ -12,7 +12,12 @@ exports.findAll = async (req, res) => {
 
 exports.create = async (req, res) => {
     try {
-        const { nama, tanggalMulai, tanggalSelesai, isActive } = req.body;
+        let { nama, tanggalMulai, tanggalSelesai, isActive } = req.body;
+
+        // Sanitize dates: convert empty strings to null
+        if (tanggalMulai === "") tanggalMulai = null;
+        if (tanggalSelesai === "") tanggalSelesai = null;
+
         const periode = await Periode.create({ nama, tanggalMulai, tanggalSelesai, isActive });
         res.send(periode);
     } catch (err) {
@@ -23,7 +28,12 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const id = req.params.id;
-        const { nama, tanggalMulai, tanggalSelesai, isActive } = req.body;
+        let { nama, tanggalMulai, tanggalSelesai, isActive } = req.body;
+
+        // Sanitize dates: convert empty strings to null
+        if (tanggalMulai === "") tanggalMulai = null;
+        if (tanggalSelesai === "") tanggalSelesai = null;
+
         await Periode.update({ nama, tanggalMulai, tanggalSelesai, isActive }, { where: { id: id } });
         res.send({ message: "Periode was updated successfully." });
     } catch (err) {

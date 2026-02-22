@@ -164,7 +164,7 @@ exports.getBimbingan = async (req, res) => {
 
         const pendaftarans = await Pendaftaran.findAll({
             where: whereClause,
-            include: ['mahasiswa', 'instansi'] // Removed 'dosen' if not needed or add back if needed
+            include: ['mahasiswa', 'instansi', 'periode'] // [NEW] Include periode for dates
         });
         console.log(`Found ${pendaftarans.length} pendaftarans`);
 
@@ -177,13 +177,28 @@ exports.getBimbingan = async (req, res) => {
                 // 1. Logbook Count
                 const logbookCount = await db.LaporanHarian.count({ where: { pendaftaranId: pId } });
 
-                // 1.5 Mingguan Count
-                let mingguanCount = 0;
-                try {
-                    mingguanCount = await db.LaporanMingguan.count({ where: { pendaftaranId: pId } });
-                } catch (e) {
-                    console.error(`Error counting LaporanMingguan for pId ${pId}:`, e.message);
+                // [NEW] Calculate Missing Logbooks
+                let missingLogbooks = 0;
+                if (p.periode && p.periode.tanggalMulai) {
+                    const startDate = new Date(p.periode.tanggalMulai);
+                    const endDate = p.periode.tanggalSelesai ? new Date(p.periode.tanggalSelesai) : new Date();
+                    const now = new Date();
+
+                    // Effective end date is min(now, endDate)
+                    const effectiveEnd = now < endDate ? now : endDate;
+
+                    if (startDate <= effectiveEnd) {
+                        // Calculate days difference (inclusive of start date? usually logbook is daily)
+                        const diffTime = Math.abs(effectiveEnd - startDate);
+                        const daysElapsed = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include start day
+
+                        // Exclude weekends? Assuming logbook is 7 days/week for now or let's assume simple days elapsed
+                        missingLogbooks = Math.max(0, daysElapsed - logbookCount);
+                    }
                 }
+
+                // 1.5 Mingguan Count
+                const mingguanCount = await db.LaporanMingguan.count({ where: { pendaftaranId: pId } });
 
                 // 2. Laporan Tengah Exists
                 let lapTengah = null;
@@ -202,10 +217,6 @@ exports.getBimbingan = async (req, res) => {
                 }
 
                 // 4. Grading Status (Has this user graded this student?)
-                // Check based on 'gradingRole'
-                // We check if there is ANY KomponenNilai for this Pendaftaran that is either:
-                // - Created with jenis = gradingRole (Legacy/Direct)
-                // - Created with kriteria.role = gradingRole
                 let alreadyGraded = false;
                 try {
                     const relevantGrades = await db.KomponenNilai.findAll({
@@ -226,10 +237,12 @@ exports.getBimbingan = async (req, res) => {
                     id: p.id,
                     mahasiswa: p.mahasiswa,
                     instansi: p.instansi,
+                    periodeId: p.periodeId, // [NEW] Needed for filtering
                     tipe: p.tipe,
                     judulProject: p.judulProject,
                     stats: {
                         logbookCount,
+                        missingLogbooks, // [NEW]
                         mingguanCount,
                         hasLaporanTengah: !!lapTengah,
                         hasLaporanAkhir: !!lapAkhir
@@ -311,7 +324,6 @@ exports.getUjian = async (req, res) => {
         });
 
         // Check if grades exist for this Dosen (Penguji)
-        // We need to fetch KomponenNilai related to these pendaftarans
         const pendaftaranIds = sidang.map(s => s.pendaftaranId);
         const grades = await db.KomponenNilai.findAll({
             where: {
@@ -322,11 +334,8 @@ exports.getUjian = async (req, res) => {
 
         // Map to flat structure for frontend compatibility
         const data = sidang.map(s => {
-            // Check if ANY grade exists for this pendaftaran that is related to PENGUJI role
-            // Since this is the Examiner's view, we check for PENGUJI grades.
             const hasGrade = grades.some(g => {
                 if (g.pendaftaranId !== s.pendaftaran.id) return false;
-                // Check if grade is PENGUJI
                 if (g.jenis === 'PENGUJI') return true;
                 if (g.kriteria && g.kriteria.role === 'PENGUJI') return true;
                 return false;
@@ -336,6 +345,7 @@ exports.getUjian = async (req, res) => {
                 id: s.pendaftaran.id,
                 mahasiswa: s.pendaftaran.mahasiswa,
                 instansi: s.pendaftaran.instansi,
+                periodeId: s.pendaftaran.periodeId, // [NEW] Needed for filtering
                 judulProject: s.pendaftaran.judulProject,
                 tipe: s.pendaftaran.tipe,
                 tanggalSidang: s.tanggal,
@@ -375,7 +385,7 @@ exports.getDashboardStats = async (req, res) => {
                         where: {
                             periodeId: activePeriode.id,
                             dosenPembimbingId: dosenId,
-                            status: 'ACTIVE' // Only active students? Or all assigned? Let's count all assigned for now or status not REJECTED
+                            status: 'ACTIVE'
                         }
                     });
 
@@ -398,8 +408,7 @@ exports.getDashboardStats = async (req, res) => {
                 }
             }
 
-            // ADMIN Logic (Rest of the code)
-            // 2. Count Pendaftaran for this period
+            // ADMIN Logic
             const pendaftarans = await Pendaftaran.findAll({
                 where: { periodeId: activePeriode.id },
                 include: ['mahasiswa', 'instansi']
@@ -407,21 +416,17 @@ exports.getDashboardStats = async (req, res) => {
 
             stats.totalMahasiswa = pendaftarans.length;
 
-            // Initialize chart data structure
             const statuses = ['PENDING', 'APPROVED', 'ACTIVE', 'REJECTED', 'COMPLETED'];
             const chartMap = statuses.reduce((acc, status) => {
                 acc[status] = { name: status, PKL1: 0, PKL2: 0, MBKM: 0 };
                 return acc;
             }, {});
 
-            // Iterate pendaftarans
             pendaftarans.forEach(p => {
-                // Breakdown Count
                 if (p.tipe === 'PKL1') stats.breakdown.PKL1++;
                 else if (p.tipe === 'PKL2') stats.breakdown.PKL2++;
                 else if (p.tipe === 'MBKM') stats.breakdown.MBKM++;
 
-                // Chart Data Populate
                 if (chartMap[p.status]) {
                     if (p.tipe === 'PKL1') chartMap[p.status].PKL1++;
                     else if (p.tipe === 'PKL2') chartMap[p.status].PKL2++;
@@ -431,13 +436,11 @@ exports.getDashboardStats = async (req, res) => {
 
             stats.chartData = Object.values(chartMap);
 
-            // Legacy statusStats (Aggregate)
             stats.statusStats = stats.chartData.map(item => ({
                 name: item.name,
                 value: item.PKL1 + item.PKL2 + item.MBKM
             }));
 
-            // 5. Recent registrations (last 5)
             stats.recent = pendaftarans.slice(0, 5).map(p => ({
                 id: p.id,
                 nama: p.mahasiswa?.nama,

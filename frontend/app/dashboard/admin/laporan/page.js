@@ -27,6 +27,8 @@ export default function AdminLaporanPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterTipe, setFilterTipe] = useState('ALL');
     const [pageSize, setPageSize] = useState(10);
+    const [periodes, setPeriodes] = useState([]); // [NEW]
+    const [selectedPeriode, setSelectedPeriode] = useState(''); // [NEW]
 
     const [editOpen, setEditOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
@@ -39,8 +41,19 @@ export default function AdminLaporanPage() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const res = await api.get('/api/pkl/all');
+            const [res, resPeriode] = await Promise.all([
+                api.get('/api/pkl/all'),
+                api.get('/api/periode') // [NEW]
+            ]);
             const eligible = res.data.filter(p => p.status === 'ACTIVE' || p.status === 'APPROVED' || p.status === 'COMPLETED');
+
+            setPeriodes(resPeriode.data);
+
+            // [NEW] Set default active period
+            const active = resPeriode.data.find(p => p.isActive);
+            if (active && !selectedPeriode) {
+                setSelectedPeriode(String(active.id));
+            }
 
             // Parallel fetch details for pagination would be too heavy if we do ALL.
             // But client-side pagination requires all data for "total pages" if not handled by backend.
@@ -66,6 +79,12 @@ export default function AdminLaporanPage() {
         const mhsNim = s.mahasiswa?.nim?.toLowerCase() || '';
         const matchesSearch = mhsName.includes(query) || mhsNim.includes(query);
         const matchesTipe = filterTipe === 'ALL' || s.tipe === filterTipe;
+
+        // [NEW] Periode Filter
+        if (selectedPeriode && selectedPeriode !== 'ALL' && String(s.periodeId) !== String(selectedPeriode)) {
+            return false;
+        }
+
         return matchesSearch && matchesTipe;
     });
 
@@ -232,6 +251,22 @@ export default function AdminLaporanPage() {
                         onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                     />
                 </div>
+                {/* [NEW] Periode Filter */}
+                <div className="w-full md:w-auto">
+                    <Select value={selectedPeriode} onValueChange={setSelectedPeriode}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Pilih Periode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">Semua Periode</SelectItem>
+                            {periodes.map(p => (
+                                <SelectItem key={p.id} value={String(p.id)}>
+                                    {p.nama} {p.isActive ? '(Aktif)' : ''}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
                 <div className="flex gap-2 w-full md:w-auto">
                     <Select value={filterTipe} onValueChange={val => { setFilterTipe(val); setCurrentPage(1); }}>
                         <SelectTrigger className="w-[120px]">
@@ -368,6 +403,8 @@ export default function AdminLaporanPage() {
                                                 size="sm"
                                                 onClick={() => handleEdit(item)}
                                                 className={item.stats?.laporanAkhir ? "text-blue-600 hover:bg-blue-50" : "text-green-600 hover:bg-green-50"}
+                                                disabled={item.periode && !item.periode.isActive} // [NEW] Disable if inactive
+                                                title={item.periode && !item.periode.isActive ? "Periode tidak aktif" : "Edit/Upload Laporan"}
                                             >
                                                 {getLatestLaporan(item.stats?.laporanAkhir) ? <><Edit className="h-4 w-4 mr-1" /> Edit</> : <><PlusCircle className="h-4 w-4 mr-1" /> Upload</>}
                                             </Button>

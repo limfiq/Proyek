@@ -42,11 +42,12 @@ exports.listHarian = async (req, res) => {
 exports.approveHarian = async (req, res) => {
     try {
         const { id } = req.params;
-        const { feedback } = req.body;
+        const { status, feedback } = req.body; // Accept status
         const laporan = await LaporanHarian.findByPk(id);
         if (!laporan) return res.status(404).send({ message: 'Logbook not found' });
 
-        laporan.status = 'APPROVED';
+        // Default to APPROVED if not provided for backward compatibility, or use provided status (e.g. REJECTED for Revisi)
+        laporan.status = status || 'APPROVED';
         if (feedback) laporan.feedback = feedback;
 
         await laporan.save();
@@ -159,7 +160,7 @@ exports.listMingguan = async (req, res) => {
         const { pendaftaranId } = req.query;
         const laporan = await LaporanMingguan.findAll({
             where: { pendaftaranId },
-            order: [['mingguKe', 'ASC']]
+            order: [['mingguKe', 'DESC']]
         });
         res.send(laporan);
     } catch (err) {
@@ -170,12 +171,13 @@ exports.listMingguan = async (req, res) => {
 exports.approveMingguan = async (req, res) => {
     try {
         const { id } = req.params;
-        const { signedFileUrl } = req.body;
+        const { status, signedFileUrl, feedback } = req.body; // Accept status and feedback
         const laporan = await LaporanMingguan.findByPk(id);
         if (!laporan) return res.status(404).send({ message: 'Logbook not found' });
 
-        laporan.status = 'APPROVED';
+        laporan.status = status || 'APPROVED';
         if (signedFileUrl) laporan.signedFileUrl = signedFileUrl;
+        if (feedback) laporan.feedback = feedback;
 
         await laporan.save();
         res.send(laporan);

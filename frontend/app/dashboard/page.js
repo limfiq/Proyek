@@ -42,24 +42,19 @@ export default function DashboardPage() {
             // Check PKL status first
             const pklRes = await api.get('/api/pkl/me');
 
-            // Handle Array response from API (take the first active or latest one)
-            const pklData = Array.isArray(pklRes.data) ? pklRes.data[0] : pklRes.data;
+            // Handle Array response from API
+            const allPkl = Array.isArray(pklRes.data) ? pklRes.data : [pklRes.data];
+
+            // [NEW] Find Active Period PKL
+            const activePkl = allPkl.find(p => p.periode && p.periode.isActive);
+            const pklData = activePkl || allPkl[0]; // Fallback to first if no active (or maybe null?)
 
             if (pklData) {
                 // Try to find sidang info in pkl object
                 let sidang = pklData.sidang;
 
-                // If not nested, try dedicated endpoint for current user
-                if (!sidang) {
-                    try {
-                        const sidRes = await api.get('/api/sidang/me');
-                        sidang = sidRes.data;
-                    } catch (e) {
-                        // ignore
-                    }
-                }
-
-                // If still not found, try by pendaftaranId using the corrected ID
+                // If not nested, try dedicated endpoint for current user (this might return old data if API not filtered)
+                // Better to rely on pklData.sidang if possible, or fetch schedule with specific pendaftaranId
                 if (!sidang && pklData.id) {
                     try {
                         const sidRes = await api.get(`/api/sidang/schedule?pendaftaranId=${pklData.id}`);
@@ -69,8 +64,13 @@ export default function DashboardPage() {
                     }
                 }
 
-                if (sidang) {
+                // Only set if it belongs to the active period (or if we are okay showing old data when no active exists? User said "diisi dengan jadwal pada periode aktif")
+                // So if activePkl exists, show its sidang. If not, maybe show nothing?
+                // Let's stick to showing activePkl's sidang.
+                if (activePkl && sidang) {
                     setStudentSidang(sidang);
+                } else {
+                    setStudentSidang(null);
                 }
             }
         } catch (err) {

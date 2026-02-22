@@ -9,6 +9,7 @@ import { Pagination } from '@/components/ui/pagination';
 import api from '@/lib/api';
 import { motion } from 'framer-motion';
 import Webcam from 'react-webcam';
+import { useToast } from "@/components/ui/use-toast";
 
 export default function LaporanPage() {
     const [activeTab, setActiveTab] = useState('harian');
@@ -24,7 +25,10 @@ export default function LaporanPage() {
     const [mingguanList, setMingguanList] = useState([]);
     const [formMingguan, setFormMingguan] = useState({ mingguKe: '', fileUrl: '' });
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState('');
+    const [error, setError] = useState(''); // Changed from message to error
+    const [editingLogbook, setEditingLogbook] = useState(null); // [NEW] State for editing
+
+    const { toast } = useToast();
     const [laporanTengah, setLaporanTengah] = useState(null);
     const [laporanAkhir, setLaporanAkhir] = useState(null);
 
@@ -40,14 +44,20 @@ export default function LaporanPage() {
         try {
             const res = await api.get('/api/pkl/me');
             if (res.data.length > 0) {
-                // Assume active one
-                const active = res.data.find(p => p.status === 'ACTIVE' || p.status === 'APPROVED' || p.status === 'PENDING');
-                setPendaftaran(active);
+                // [NEW] Filter for Active Period
+                // If API returns array, find the one where periode.isActive is true
+                const active = res.data.find(p => p.periode && p.periode.isActive);
+
+                // If found, set it. If not, maybe show "No active period" state?
+                // For now, let's set it if found.
                 if (active) {
+                    setPendaftaran(active);
                     loadHarian(active.id);
                     loadMingguan(active.id);
                     loadTengah(active.id);
                     loadAkhir(active.id);
+                } else {
+                    setPendaftaran(null); // Explicitly set null if no active period found
                 }
             }
         } catch (err) {
@@ -122,6 +132,7 @@ export default function LaporanPage() {
         e.preventDefault();
         if (!pendaftaran) return;
         setLoading(true);
+        setError('');
 
         const formData = new FormData();
         formData.append('pendaftaranId', pendaftaran.id);
@@ -134,21 +145,62 @@ export default function LaporanPage() {
 
         try {
             const token = localStorage.getItem('token');
-            await api.post('/api/laporan/harian', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    'Authorization': `Bearer ${token}` // Ensure token is passed if interceptor misses multipart
-                }
-            });
-            setMessage('Laporan harian disimpan!');
-            loadHarian(pendaftaran.id);
+            if (editingLogbook) {
+                // UPDATE
+                await api.put(`/api/laporan/harian/${editingLogbook.id}`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                toast({ title: 'Berhasil', description: 'Laporan harian berhasil diperbarui.' });
+                setEditingLogbook(null);
+            } else {
+                // CREATE
+                await api.post('/api/laporan/harian', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                toast({ title: 'Berhasil', description: 'Laporan harian berhasil disimpan.' });
+            }
+
+            // Reset form
             setFormHarian({ tanggal: '', kegiatan: '', lokasi: '' });
-            setFotoFile(null);
+            setFotoFile(null); // Reset foto file
+            setShowCamera(false); // Hide camera if it was open
+
+            // Reload list
+            if (pendaftaran) loadHarian(pendaftaran.id);
+
         } catch (err) {
-            alert(err.message || 'Gagal menyimpan laporan');
+            console.error(err);
+            setError(err.response?.data?.message || 'Gagal menyimpan laporan.');
+            toast({ title: 'Gagal', description: err.response?.data?.message || 'Gagal menyimpan laporan.', variant: 'destructive' });
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleEdit = (item) => {
+        setEditingLogbook(item);
+        setFormHarian({
+            tanggal: item.tanggal,
+            kegiatan: item.kegiatan,
+            lokasi: item.lokasi || '',
+        });
+        setFotoFile(null); // Don't pre-fill foto, user needs to re-upload if needed
+        setShowCamera(false);
+        // Scroll to form
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleCancelEdit = () => {
+        setEditingLogbook(null);
+        setFormHarian({ tanggal: '', kegiatan: '', lokasi: '' });
+        setFotoFile(null);
+        setShowCamera(false);
     };
 
     const handleSubmitTengah = async (e) => {
@@ -160,10 +212,10 @@ export default function LaporanPage() {
                 pendaftaranId: pendaftaran.id,
                 ...formTengah
             });
-            setMessage('Laporan tengah disubmit!');
+            toast({ title: 'Berhasil', description: 'Laporan tengah disubmit!' });
             loadTengah(pendaftaran.id);
         } catch (err) {
-            alert(err.message);
+            toast({ title: 'Gagal', description: err.message, variant: 'destructive' });
         } finally {
             setLoading(false);
         }
@@ -178,10 +230,10 @@ export default function LaporanPage() {
                 pendaftaranId: pendaftaran.id,
                 ...formAkhir
             });
-            setMessage('Laporan akhir disubmit!');
+            toast({ title: 'Berhasil', description: 'Laporan akhir disubmit!' });
             loadAkhir(pendaftaran.id);
         } catch (err) {
-            alert(err.message);
+            toast({ title: 'Gagal', description: err.message, variant: 'destructive' });
         } finally {
             setLoading(false);
         }
@@ -196,11 +248,11 @@ export default function LaporanPage() {
                 pendaftaranId: pendaftaran.id,
                 ...formMingguan
             });
-            setMessage('Laporan mingguan disimpan!');
+            toast({ title: 'Berhasil', description: 'Laporan mingguan disimpan!' });
             loadMingguan(pendaftaran.id);
             setFormMingguan({ mingguKe: '', fileUrl: '' });
         } catch (err) {
-            alert(err.message);
+            toast({ title: 'Gagal', description: err.message, variant: 'destructive' });
         } finally {
             setLoading(false);
         }
@@ -259,16 +311,25 @@ export default function LaporanPage() {
                     <div className="grid md:grid-cols-2 gap-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Input Laporan Harian</CardTitle>
+                                <CardTitle>{editingLogbook ? 'Edit Laporan Harian' : 'Input Laporan Harian'}</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                {message && <p className="text-green-600 mb-2 text-sm">{message}</p>}
+                                {/* Alert if editing */}
+                                {editingLogbook && (
+                                    <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded mb-4 flex justify-between items-center">
+                                        <span>Sedang mengedit laporan tanggal {editingLogbook.tanggal}</span>
+                                        <Button variant="outline" size="sm" onClick={handleCancelEdit}>Batal</Button>
+                                    </div>
+                                )}
+                                {error && <p className="text-red-600 mb-2 text-sm">{error}</p>}
                                 <form onSubmit={handleSubmitHarian} className="space-y-4">
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium">Tanggal</label>
                                         <Input
                                             type="date"
                                             value={formHarian.tanggal}
+                                            max={new Date().toISOString().split('T')[0]} // Max today
+                                            min={new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]} // Min 7 days ago
                                             onChange={(e) => setFormHarian({ ...formHarian, tanggal: e.target.value })}
                                             required
                                         />
@@ -343,7 +404,7 @@ export default function LaporanPage() {
                                     </div>
 
                                     <Button type="submit" className="w-full" disabled={loading}>
-                                        {loading ? 'Menyimpan...' : 'Simpan Laporan'}
+                                        {loading ? 'Menyimpan...' : (editingLogbook ? 'Simpan Perubahan' : 'Simpan Laporan')}
                                     </Button>
                                 </form>
                             </CardContent>
@@ -357,13 +418,24 @@ export default function LaporanPage() {
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <p className="font-bold text-gray-800">{item.tanggal}</p>
-                                                <p className="text-sm text-gray-600 mt-1">{item.kegiatan}</p>
+                                                <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{item.kegiatan}</p>
                                                 {item.lokasi && (
                                                     <div className="text-xs text-blue-600 mt-1 flex items-center gap-1">
                                                         <MapPin className="h-3 w-3" /> {item.lokasi}
                                                     </div>
                                                 )}
-                                                {item.feedback && <p className="text-xs text-orange-600 mt-2 bg-orange-50 p-2 rounded">Komentar Pembimbing: {item.feedback}</p>}
+                                                <div className="flex gap-2 mt-2">
+                                                    {item.status !== 'APPROVED' && (
+                                                        <Button variant="outline" size="sm" onClick={() => handleEdit(item)}>
+                                                            Edit
+                                                        </Button>
+                                                    )}
+                                                    {item.feedback && (
+                                                        <div className="bg-red-50 text-red-600 p-2 rounded text-sm flex-1">
+                                                            <strong>Feedback:</strong> {item.feedback}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="flex flex-col items-end gap-2">
                                                 <span className={`text-xs px-2 py-1 rounded-full ${item.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
