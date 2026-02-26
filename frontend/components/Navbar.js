@@ -30,8 +30,8 @@ export default function Navbar() {
                     <div className="hidden md:flex items-center gap-8 text-sm font-medium">
                         <Link href="/" className="text-gray-600 hover:text-primary transition-colors">Beranda</Link>
                         <Link href="/lowongan" className="text-gray-600 hover:text-primary transition-colors">Lowongan Magang</Link>
-                        <Link href="/#perusahaan" className="text-gray-600 hover:text-primary transition-colors">Mitra Perusahaan</Link>
-                        <Link href="/#panduan" className="text-gray-600 hover:text-primary transition-colors">Panduan</Link>
+                        <Link href="/mitra" className="text-gray-600 hover:text-primary transition-colors">Mitra Perusahaan</Link>
+                        <Link href="/panduan" className="text-gray-600 hover:text-primary transition-colors">Panduan</Link>
                     </div>
                     <div className="flex items-center gap-4">
                         {isLoggedIn ? (
@@ -45,7 +45,7 @@ export default function Navbar() {
                                 <Link href="/login" className="text-primary hover:underline font-medium text-sm hidden sm:block">
                                     Masuk
                                 </Link>
-                                <Link href="/login">
+                                <Link href="/register">
                                     <Button className="bg-primary hover:bg-blue-700 text-white rounded-full px-6 shadow-md shadow-blue-200">
                                         Daftar Sekarang
                                     </Button>

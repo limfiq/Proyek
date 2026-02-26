@@ -121,8 +121,8 @@ export default function LandingPage() {
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto mt-16">
             {[
-              { label: "Lowongan Magang", val: "1,250+", icon: Briefcase },
-              { label: "Mitra Perusahaan", val: "120+", icon: Building2 },
+              { label: "Lowongan Magang", val: "1,250+", icon: Briefcase, link: "/lowongan" },
+              { label: "Mitra Perusahaan", val: "120+", icon: Building2, link: "/mitra" },
               { label: "Peserta Aktif", val: "500+", icon: Users },
               { label: "Alumni Sukses", val: "350+", icon: Star }
             ].map((stat, i) => (
@@ -132,7 +132,8 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.3 + (i * 0.1) }}
                 viewport={{ once: true }}
-                className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow"
+                className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => stat.link && router.push(stat.link)}
               >
                 <div className="bg-blue-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 text-primary">
                   <stat.icon size={20} />
@@ -258,13 +259,12 @@ export default function LandingPage() {
       <section className="py-20 px-4">
         <div className="max-w-6xl mx-auto bg-gradient-to-r from-primary to-[#1D487B] rounded-3xl p-12 md:p-20 text-center text-white relative overflow-hidden shadow-2xl">
           <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-48 -mt-48"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -ml-48 -mb-48"></div>
 
           <h2 className="text-3xl md:text-5xl font-extrabold mb-6 relative z-10">Siap untuk Memulai Langkah Awal Karirmu?</h2>
           <p className="text-white/90 text-lg mb-10 max-w-2xl mx-auto relative z-10">
             Bergabunglah dengan ribuan mahasiswa lainnya yang telah menemukan tempat magang impian mereka.
           </p>
-          <Link href={isLoggedIn ? "/dashboard" : "/login"}>
+          <Link href={isLoggedIn ? "/dashboard" : "/register"}>
             <Button size="lg" className="h-14 px-10 text-lg bg-white text-primary border-none hover:bg-gray-100 font-bold shadow-lg">
               {isLoggedIn ? "Masuk ke Dashboard" : "Daftar Sekarang - Gratis"}
             </Button>

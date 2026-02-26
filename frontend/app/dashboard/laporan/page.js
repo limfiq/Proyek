@@ -10,14 +10,16 @@ import api from '@/lib/api';
 import { motion } from 'framer-motion';
 import Webcam from 'react-webcam';
 import { useToast } from "@/components/ui/use-toast";
+import { TinyEditor } from '@/components/dashboard/TinyEditor';
 
 export default function LaporanPage() {
     const [activeTab, setActiveTab] = useState('harian');
     const [harianList, setHarianList] = useState([]);
     const [pendaftaran, setPendaftaran] = useState(null);
     const [formHarian, setFormHarian] = useState({ tanggal: '', kegiatan: '', lokasi: '' });
-    const [fotoFile, setFotoFile] = useState(null);
+    const [fotoFiles, setFotoFiles] = useState([]); // [NEW] Multiple files
     const [showCamera, setShowCamera] = useState(false);
+    const [facingMode, setFacingMode] = useState("user");
     const webcamRef = useRef(null);
 
     const [formTengah, setFormTengah] = useState({ fileUrl: '' });
@@ -126,15 +128,26 @@ export default function LaporanPage() {
     const handleCapture = () => {
         const imageSrc = webcamRef.current.getScreenshot();
         if (imageSrc) {
-            // Convert base64 to blob
             fetch(imageSrc)
                 .then(res => res.blob())
                 .then(blob => {
-                    const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
-                    setFotoFile(file);
+                    const file = new File([blob], `capture_${Date.now()}.jpg`, { type: "image/jpeg" });
+                    setFotoFiles(prev => [...prev, file]);
                     setShowCamera(false);
+                    toast({ title: "Berhasil", description: "Foto berhasil diambil." });
                 });
         }
+    };
+
+    const handleFileChange = (e) => {
+        if (e.target.files) {
+            const newFiles = Array.from(e.target.files);
+            setFotoFiles(prev => [...prev, ...newFiles]);
+        }
+    };
+
+    const removeFoto = (index) => {
+        setFotoFiles(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleLocation = () => {
@@ -161,9 +174,9 @@ export default function LaporanPage() {
         formData.append('tanggal', formHarian.tanggal);
         formData.append('kegiatan', formHarian.kegiatan);
         formData.append('lokasi', formHarian.lokasi);
-        if (fotoFile) {
-            formData.append('foto', fotoFile);
-        }
+        fotoFiles.forEach(file => {
+            formData.append('foto', file);
+        });
 
         try {
             const token = localStorage.getItem('token');
@@ -190,8 +203,8 @@ export default function LaporanPage() {
 
             // Reset form
             setFormHarian({ tanggal: '', kegiatan: '', lokasi: '' });
-            setFotoFile(null); // Reset foto file
-            setShowCamera(false); // Hide camera if it was open
+            setFotoFiles([]);
+            setShowCamera(false);
 
             // Reload list
             if (pendaftaran) loadHarian(pendaftaran.id);
@@ -212,7 +225,7 @@ export default function LaporanPage() {
             kegiatan: item.kegiatan,
             lokasi: item.lokasi || '',
         });
-        setFotoFile(null); // Don't pre-fill foto, user needs to re-upload if needed
+        setFotoFiles([]); // Existing photos are not removable for now to keep it simple, just add new
         setShowCamera(false);
         // Scroll to form
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -221,7 +234,7 @@ export default function LaporanPage() {
     const handleCancelEdit = () => {
         setEditingLogbook(null);
         setFormHarian({ tanggal: '', kegiatan: '', lokasi: '' });
-        setFotoFile(null);
+        setFotoFiles([]);
         setShowCamera(false);
     };
 
@@ -450,12 +463,11 @@ export default function LaporanPage() {
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium">Kegiatan</label>
-                                        <textarea
-                                            className="w-full min-h-[100px] p-3 rounded-md border text-sm focus:ring-2 focus:ring-primary focus:outline-none"
-                                            placeholder="Deskripsikan kegiatan..."
+                                        <TinyEditor
                                             value={formHarian.kegiatan}
-                                            onChange={(e) => setFormHarian({ ...formHarian, kegiatan: e.target.value })}
-                                            required
+                                            onChange={(content) => setFormHarian({ ...formHarian, kegiatan: content })}
+                                            placeholder="Deskripsikan kegiatan secara detail..."
+                                            height={250}
                                         />
                                     </div>
 
@@ -483,36 +495,49 @@ export default function LaporanPage() {
                                                     ref={webcamRef}
                                                     screenshotFormat="image/jpeg"
                                                     className="w-full"
+                                                    videoConstraints={{ facingMode: facingMode }}
                                                 />
                                                 <div className="p-2 bg-gray-100 flex justify-center gap-2">
                                                     <Button type="button" size="sm" onClick={handleCapture}>Ambil Foto</Button>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => setFacingMode(prev => prev === "user" ? "environment" : "user")}
+                                                        className="gap-1"
+                                                    >
+                                                        <RefreshCw className="h-3 w-3" />
+                                                        Ganti
+                                                    </Button>
                                                     <Button type="button" size="sm" variant="ghost" onClick={() => setShowCamera(false)}>Batal</Button>
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div className="flex flex-col gap-2">
-                                                {fotoFile ? (
-                                                    <div className="relative w-full h-48 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
-                                                        <img src={URL.createObjectURL(fotoFile)} alt="Preview" className="h-full object-contain" />
-                                                        <Button
-                                                            type="button"
-                                                            variant="destructive"
-                                                            size="xs"
-                                                            className="absolute top-2 right-2"
-                                                            onClick={() => setFotoFile(null)}
-                                                        >
-                                                            Hapus
-                                                        </Button>
+                                            <div className="flex flex-col gap-3">
+                                                {fotoFiles.length > 0 ? (
+                                                    <div className="grid grid-cols-3 gap-2 mb-2">
+                                                        {fotoFiles.map((file, idx) => (
+                                                            <div key={idx} className="relative aspect-square rounded-md overflow-hidden border">
+                                                                <img src={URL.createObjectURL(file)} alt="Preview" className="w-full h-full object-cover" />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => removeFoto(idx)}
+                                                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
+                                                                >
+                                                                    <RefreshCw className="h-3 w-3 rotate-45" />
+                                                                </button>
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                ) : (
-                                                    <div
-                                                        className="w-full h-32 border-2 border-dashed rounded-md flex flex-col items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-50 hover:border-blue-300 transition-colors"
-                                                        onClick={() => setShowCamera(true)}
-                                                    >
-                                                        <Camera className="h-8 w-8 mb-2" />
-                                                        <span className="text-xs">Klik untuk ambil foto</span>
-                                                    </div>
-                                                )}
+                                                ) : null}
+                                                <div
+                                                    className="w-full h-24 border-2 border-dashed rounded-md flex flex-col items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-50 transition-colors"
+                                                    onClick={() => setShowCamera(true)}
+                                                >
+                                                    <Camera className="h-6 w-6 mb-1" />
+                                                    <span className="text-xs">Ambil Foto / Pilih File (Maks 5)</span>
+                                                    <input type="file" className="hidden" accept="image/*" multiple onChange={handleFileChange} />
+                                                </div>
                                             </div>
                                         )}
                                     </div>
@@ -560,7 +585,7 @@ export default function LaporanPage() {
                                                                     <CalendarIcon className="h-3.5 w-3.5 text-primary/60" />
                                                                     <p className="font-bold text-gray-800">{new Date(item.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
                                                                 </div>
-                                                                <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap leading-relaxed">{item.kegiatan}</p>
+                                                                <div className="text-sm text-gray-600 mt-2 prose prose-sm max-w-none prose-p:leading-relaxed prose-headings:mb-1" dangerouslySetInnerHTML={{ __html: item.kegiatan }} />
                                                                 {item.lokasi && (
                                                                     <div className="text-xs text-blue-600 mt-2 flex items-center gap-1 bg-blue-50 w-fit px-2 py-0.5 rounded">
                                                                         <MapPin className="h-3 w-3" /> {item.lokasi}
@@ -584,16 +609,26 @@ export default function LaporanPage() {
                                                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter ${item.status === 'APPROVED' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-yellow-100 text-yellow-700 border border-yellow-200'}`}>
                                                                     {item.status}
                                                                 </span>
-                                                                {item.foto && (
-                                                                    <a href={`${process.env.NEXT_PUBLIC_API_URL}${item.foto}`} target="_blank" rel="noreferrer" className="group">
-                                                                        <div className="w-14 h-14 rounded-md border bg-gray-50 flex items-center justify-center relative overflow-hidden ring-1 ring-gray-200">
-                                                                            <img src={`${process.env.NEXT_PUBLIC_API_URL}${item.foto}`} alt="Logbook" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                                                                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                                <Camera className="h-4 w-4 text-white" />
-                                                                            </div>
+                                                                {item.foto && (() => {
+                                                                    let urls = [];
+                                                                    try {
+                                                                        const parsed = JSON.parse(item.foto);
+                                                                        urls = Array.isArray(parsed) ? parsed : [item.foto];
+                                                                    } catch (e) {
+                                                                        urls = [item.foto];
+                                                                    }
+                                                                    return (
+                                                                        <div className="grid grid-cols-2 gap-1">
+                                                                            {urls.map((u, i) => (
+                                                                                <a key={i} href={u.startsWith('http') ? u : `${api.defaults.baseURL}${u}`} target="_blank" rel="noreferrer" className="group">
+                                                                                    <div className="w-10 h-10 rounded border bg-gray-50 flex items-center justify-center relative overflow-hidden ring-1 ring-gray-100">
+                                                                                        <img src={u.startsWith('http') ? u : `${api.defaults.baseURL}${u}`} alt="Logbook" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                                                                    </div>
+                                                                                </a>
+                                                                            ))}
                                                                         </div>
-                                                                    </a>
-                                                                )}
+                                                                    );
+                                                                })()}
                                                             </div>
                                                         </div>
                                                     </CardContent>
@@ -910,8 +945,9 @@ export default function LaporanPage() {
                             )}
                         </div>
                     </div>
-                )}
-            </motion.div>
+                )
+                }
+            </motion.div >
         </div >
     );
 }

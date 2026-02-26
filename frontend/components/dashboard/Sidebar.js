@@ -114,6 +114,7 @@ export const sidebarLinks = [
     { href: '/dashboard/kemahasiswaan/lomba', label: 'Info Lomba', icon: Award, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI', 'ADMINKEMAHASISWAAN'], category: 'KEMAHASISWAAN' },
     { href: '/dashboard/kemahasiswaan/kegiatan', label: 'Info Kegiatan', icon: Calendar, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI', 'ADMINKEMAHASISWAAN'], category: 'KEMAHASISWAAN' },
     { href: '/dashboard/kemahasiswaan/loker', label: 'Info Loker', icon: Building2, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI', 'ADMINKEMAHASISWAAN', 'INSTANSI'], category: 'KEMAHASISWAAN' },
+    { href: '/dashboard/admin/panduan', label: 'Panduan & Ketentuan', icon: FileText, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI', 'ADMINKEMAHASISWAAN'], category: 'MASTER' },
 
     { href: '/dashboard/master/users', label: 'Users', icon: Users, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI'], category: 'MASTER' },
     { href: '/dashboard/master/kriteria', label: 'Kriteria Nilai', icon: Award, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI'], category: 'MASTER' },

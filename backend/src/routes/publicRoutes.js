@@ -5,5 +5,7 @@ const instansiController = require('../controllers/instansiController');
 // Public route to fetch active vacancies (instansi list)
 router.get('/lowongan', instansiController.findPublic);
 router.get('/lowongan/:id', instansiController.findPublicOne);
+const panduanController = require('../controllers/panduanController');
+router.get('/panduan', panduanController.findPublic);
 
 module.exports = router;

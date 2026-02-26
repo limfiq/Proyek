@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { MapPin, Camera, Save, Info, CheckCircle, FileText, Calendar as CalendarIcon, Users, RefreshCw } from 'lucide-react';
+import { MapPin, Camera, Save, Info, CheckCircle, FileText, Calendar as CalendarIcon, Users, RefreshCw, Upload } from 'lucide-react';
 import api from '@/lib/api';
 import { motion } from 'framer-motion';
 import Webcam from 'react-webcam';
@@ -26,8 +26,9 @@ export default function SppdPage() {
         keterangan: ''
     });
 
-    const [fotoFile, setFotoFile] = useState(null);
+    const [fotoFiles, setFotoFiles] = useState([]); // [NEW] Multiple files
     const [showCamera, setShowCamera] = useState(false);
+    const [facingMode, setFacingMode] = useState("user");
     const webcamRef = useRef(null);
 
     useEffect(() => {
@@ -84,23 +85,34 @@ export default function SppdPage() {
             fetch(imageSrc)
                 .then(res => res.blob())
                 .then(blob => {
-                    const file = new File([blob], "selfie_sppd.jpg", { type: "image/jpeg" });
-                    setFotoFile(file);
+                    const file = new File([blob], `sppd_${Date.now()}.jpg`, { type: "image/jpeg" });
+                    setFotoFiles(prev => [...prev, file]);
                     setShowCamera(false);
                     toast({ title: 'Berhasil', description: 'Foto berhasil diambil.' });
                 });
         }
     };
 
+    const handleFileChange = (e) => {
+        if (e.target.files) {
+            const newFiles = Array.from(e.target.files);
+            setFotoFiles(prev => [...prev, ...newFiles]);
+        }
+    };
+
+    const removeFoto = (index) => {
+        setFotoFiles(prev => prev.filter((_, i) => i !== index));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!form.pendaftaranId) return toast({ title: 'Peringatan', description: 'Pilih mahasiswa bimbingan.', variant: 'destructive' });
-        if (!fotoFile) return toast({ title: 'Peringatan', description: 'Ambil foto selfie terlebih dahulu.', variant: 'destructive' });
+        if (fotoFiles.length === 0) return toast({ title: 'Peringatan', description: 'Ambil foto dokumentasi terlebih dahulu.', variant: 'destructive' });
 
         setLoading(true);
         const formData = new FormData();
         Object.keys(form).forEach(key => formData.append(key, form[key]));
-        formData.append('foto', fotoFile);
+        fotoFiles.forEach(file => formData.append('foto', file));
 
         try {
             await api.post('/api/sppd', formData, {
@@ -115,7 +127,7 @@ export default function SppdPage() {
                 koordinat: '',
                 keterangan: ''
             });
-            setFotoFile(null);
+            setFotoFiles([]);
             loadData();
         } catch (err) {
             toast({ title: 'Gagal', description: err.response?.data?.message || 'Gagal menyimpan data.', variant: 'destructive' });
@@ -219,31 +231,43 @@ export default function SppdPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Foto Selfie (Dokumentasi)</label>
-                                {fotoFile ? (
-                                    <div className="relative rounded-lg overflow-hidden border">
-                                        <img src={URL.createObjectURL(fotoFile)} alt="Preview" className="w-full h-40 object-cover" />
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="sm"
-                                            className="absolute bottom-2 right-2"
-                                            onClick={() => setFotoFile(null)}
-                                        >
-                                            Hapus
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <Button
-                                        type="button"
-                                        className="w-full h-24 border-dashed border-2 flex flex-col gap-2"
-                                        variant="outline"
-                                        onClick={() => setShowCamera(true)}
-                                    >
-                                        <Camera className="h-8 w-8 text-gray-400" />
-                                        <span>Ambil Foto</span>
-                                    </Button>
-                                )}
+                                <label className="text-sm font-medium">Foto Dokumentasi (Maks 5)</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {fotoFiles.map((file, idx) => (
+                                        <div key={idx} className="relative aspect-square rounded-md overflow-hidden border bg-gray-50 group">
+                                            <img
+                                                src={URL.createObjectURL(file)}
+                                                alt="Preview"
+                                                className="w-full h-full object-cover"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeFoto(idx)}
+                                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <RefreshCw className="h-3 w-3 rotate-45" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {fotoFiles.length < 5 && (
+                                        <>
+                                            <Button
+                                                type="button"
+                                                className="aspect-square border-dashed border-2 flex flex-col gap-1 p-0"
+                                                variant="outline"
+                                                onClick={() => setShowCamera(true)}
+                                            >
+                                                <Camera className="h-5 w-5 text-gray-400" />
+                                                <span className="text-[10px]">Kamera</span>
+                                            </Button>
+                                            <label className="aspect-square flex flex-col items-center justify-center gap-1 border-2 border-dashed rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
+                                                <Upload className="h-5 w-5 text-gray-400" />
+                                                <span className="text-[10px]">File</span>
+                                                <input type="file" className="hidden" accept="image/*" multiple onChange={handleFileChange} />
+                                            </label>
+                                        </>
+                                    )}
+                                </div>
                             </div>
 
                             <Button type="submit" className="w-full" disabled={loading}>
@@ -277,16 +301,34 @@ export default function SppdPage() {
                                                 <p className="font-bold text-sm">{formatDate(item.tanggal)}</p>
                                                 <p className="text-xs text-gray-600 font-medium">{item.pendaftaran?.mahasiswa?.nama || 'N/A'}</p>
                                             </div>
-                                            {item.fotoUrl && (
-                                                <a
-                                                    href={item.fotoUrl.startsWith('http') ? item.fotoUrl : `${api.defaults.baseURL}${item.fotoUrl}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-[10px] text-blue-600 font-bold hover:underline"
-                                                >
-                                                    Lihat Foto
-                                                </a>
-                                            )}
+                                            {item.fotoUrl && (() => {
+                                                let urls = [];
+                                                try {
+                                                    const parsed = JSON.parse(item.fotoUrl);
+                                                    urls = Array.isArray(parsed) ? parsed : [item.fotoUrl];
+                                                } catch (e) {
+                                                    urls = [item.fotoUrl];
+                                                }
+                                                return (
+                                                    <div className="flex gap-1 mt-1 overflow-x-auto pb-1 no-scrollbar">
+                                                        {urls.map((u, i) => (
+                                                            <a
+                                                                key={i}
+                                                                href={u.startsWith('http') ? u : `${api.defaults.baseURL}${u}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="flex-shrink-0"
+                                                            >
+                                                                <img
+                                                                    src={u.startsWith('http') ? u : `${api.defaults.baseURL}${u}`}
+                                                                    alt="SPPD"
+                                                                    className="w-12 h-12 object-cover rounded border bg-gray-100"
+                                                                />
+                                                            </a>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                         <div className="mt-2 space-y-1">
                                             <p className="text-xs flex items-center gap-1">
@@ -325,11 +367,22 @@ export default function SppdPage() {
                             ref={webcamRef}
                             screenshotFormat="image/jpeg"
                             className="w-full aspect-square object-cover"
-                            videoConstraints={{ facingMode: "user" }}
+                            videoConstraints={{ facingMode: facingMode }}
                         />
-                        <div className="p-4 flex gap-3">
-                            <Button className="flex-1" onClick={handleCapture}>Ambil Foto</Button>
-                            <Button variant="outline" className="flex-1" onClick={() => setShowCamera(false)}>Batal</Button>
+                        <div className="p-4 flex flex-col gap-3">
+                            <div className="flex gap-3">
+                                <Button className="flex-1" onClick={handleCapture}>Ambil Foto</Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="flex-1 gap-2"
+                                    onClick={() => setFacingMode(prev => prev === "user" ? "environment" : "user")}
+                                >
+                                    <RefreshCw className="h-4 w-4" />
+                                    Ganti Kamera
+                                </Button>
+                            </div>
+                            <Button variant="ghost" className="w-full" onClick={() => setShowCamera(false)}>Batal</Button>
                         </div>
                     </div>
                 </div>

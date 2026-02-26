@@ -16,15 +16,17 @@ exports.createHarian = async (req, res) => {
             return res.status(403).send({ message: 'Tidak dapat mengisi laporan saat status pendaftaran PENDING.' });
         }
 
-        let fotoUrl = null;
+        let fotoUrls = [];
 
-        if (req.file) {
-            const uploadResult = await googleDriveService.uploadFile(req.file);
-            fotoUrl = uploadResult.webViewLink; // or webContentLink for direct download
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                const uploadResult = await googleDriveService.uploadFile(file);
+                fotoUrls.push(uploadResult.webViewLink);
+            }
         }
 
         const laporan = await LaporanHarian.create({
-            pendaftaranId, tanggal, kegiatan, lokasi, foto: fotoUrl, status: 'DRAFT'
+            pendaftaranId, tanggal, kegiatan, lokasi, foto: JSON.stringify(fotoUrls), status: 'DRAFT'
         });
         res.status(201).send(laporan);
     } catch (err) {
@@ -40,22 +42,35 @@ exports.updateHarian = async (req, res) => {
             include: [{ model: Pendaftaran, as: 'pendaftaran' }]
         });
         if (!laporan) return res.status(404).send({ message: 'Logbook not found' });
+        if (laporan.status === 'APPROVED') {
+            return res.status(403).send({ message: 'Tidak dapat mengubah laporan yang sudah disetujui.' });
+        }
 
         if (laporan.pendaftaran?.status === 'PENDING') {
             return res.status(403).send({ message: 'Tidak dapat mengubah laporan saat status pendaftaran PENDING.' });
         }
 
-        let fotoUrl = laporan.foto;
+        let fotoUrls = [];
+        try {
+            if (laporan.foto) {
+                const parsed = JSON.parse(laporan.foto);
+                fotoUrls = Array.isArray(parsed) ? parsed : [laporan.foto];
+            }
+        } catch (e) {
+            if (laporan.foto) fotoUrls = [laporan.foto];
+        }
 
-        if (req.file) {
-            const uploadResult = await googleDriveService.uploadFile(req.file);
-            fotoUrl = uploadResult.webViewLink;
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                const uploadResult = await googleDriveService.uploadFile(file);
+                fotoUrls.push(uploadResult.webViewLink);
+            }
         }
 
         laporan.tanggal = tanggal || laporan.tanggal;
         laporan.kegiatan = kegiatan || laporan.kegiatan;
         laporan.lokasi = lokasi || laporan.lokasi;
-        laporan.foto = fotoUrl;
+        laporan.foto = JSON.stringify(fotoUrls);
 
         // If it was rejected, reset to DRAFT after edit
         if (laporan.status === 'REJECTED') {

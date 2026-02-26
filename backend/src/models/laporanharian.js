@@ -24,7 +24,7 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.ENUM('DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED'),
             defaultValue: 'DRAFT'
         },
-        foto: DataTypes.STRING,
+        foto: DataTypes.TEXT,
         lokasi: DataTypes.TEXT,
         feedback: DataTypes.TEXT,
         ttdUrl: DataTypes.STRING // URL to signature image if handled programmatically or boolean

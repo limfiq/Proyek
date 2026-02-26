@@ -33,10 +33,7 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: true
         },
-        fotoUrl: {
-            type: DataTypes.STRING,
-            allowNull: true
-        },
+        fotoUrl: DataTypes.TEXT,
         keterangan: {
             type: DataTypes.TEXT,
             allowNull: true

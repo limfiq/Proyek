@@ -30,8 +30,8 @@ const upload = multer({
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
-router.post('/laporan/harian', verifyToken, upload.single('foto'), laporanController.createHarian);
-router.put('/laporan/harian/:id', verifyToken, upload.single('foto'), laporanController.updateHarian); // [NEW]
+router.post('/laporan/harian', verifyToken, upload.array('foto', 5), laporanController.createHarian);
+router.put('/laporan/harian/:id', verifyToken, upload.array('foto', 5), laporanController.updateHarian); // [NEW]
 router.get('/laporan/harian', verifyToken, laporanController.listHarian); // ?pendaftaranId=x
 router.put('/laporan/harian/:id/approve', verifyToken, laporanController.approveHarian);
 router.put('/laporan/harian/:id/feedback', verifyToken, laporanController.updateFeedbackHarian);
@@ -46,7 +46,7 @@ router.put('/laporan/mingguan/:id/approve', verifyToken, laporanController.appro
 router.put('/laporan/mingguan/:id', verifyToken, laporanController.updateMingguan);
 
 const sppdController = require('../controllers/sppdController');
-router.post('/sppd', verifyToken, upload.single('foto'), sppdController.createSppd);
+router.post('/sppd', verifyToken, upload.array('foto', 5), sppdController.createSppd);
 router.get('/sppd', verifyToken, sppdController.getSppdList);
 router.get('/sppd/bimbingan', verifyToken, sppdController.getBimbinganLocations);
 

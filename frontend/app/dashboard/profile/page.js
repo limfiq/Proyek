@@ -28,7 +28,7 @@ export default function ProfilePage() {
 
         setLoading(true);
         try {
-            await api.post('/api/auth/change-password', {
+            await api.post('/auth/change-password', {
                 oldPassword: form.oldPassword,
                 newPassword: form.newPassword
             });

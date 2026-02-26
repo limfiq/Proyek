@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import api from '@/lib/api';
+import { TinyEditor } from './TinyEditor';
 
 export function GradingForm({ pendaftaranId, role, onClose, type, gradingRole }) {
     const [loading, setLoading] = useState(false);
@@ -107,12 +108,11 @@ export function GradingForm({ pendaftaranId, role, onClose, type, gradingRole })
                     {userRole === 'PENGUJI' && (
                         <div className="space-y-1 pt-2 border-t">
                             <Label htmlFor="revisi">Revisi / Catatan Penguji</Label>
-                            <textarea
-                                id="revisi"
-                                className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                                placeholder="Masukkan catatan revisi jika ada..."
+                            <TinyEditor
                                 value={revisi}
-                                onChange={e => setRevisi(e.target.value)}
+                                onChange={(content) => setRevisi(content)}
+                                placeholder="Masukkan catatan revisi jika ada..."
+                                height={200}
                             />
                         </div>
                     )}

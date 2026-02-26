@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { motion } from 'framer-motion';
 import api from '@/lib/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Users, Calendar, CheckCircle, Clock, FileText, Phone } from 'lucide-react';
+import { Users, Calendar, CheckCircle, Clock, FileText, Phone, Filter } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function DashboardPage() {
     const [user, setUser] = useState(null);
@@ -14,6 +15,7 @@ export default function DashboardPage() {
     const [studentSidang, setStudentSidang] = useState(null);
     const [pendaftaranData, setPendaftaranData] = useState(null);
     const [jadwalData, setJadwalData] = useState([]);
+    const [agendaFilter, setAgendaFilter] = useState('ALL');
 
     const formatDate = (dateString) => {
         if (!dateString) return '-';
@@ -342,35 +344,87 @@ export default function DashboardPage() {
                     <div className="grid gap-6 md:grid-cols-3 mt-6">
                         {/* Jadwal Widget for Lecturer */}
                         <Card className="md:col-span-1 border-l-4 border-l-indigo-600">
-                            <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                                <div>
-                                    <CardTitle className="text-lg font-bold">Agenda Kegiatan</CardTitle>
-                                    <CardDescription>Jadwal umum program magang</CardDescription>
+                            <CardHeader className="pb-3">
+                                <div className="flex flex-row items-center justify-between group">
+                                    <div>
+                                        <CardTitle className="text-lg font-bold">Agenda Kegiatan</CardTitle>
+                                        <CardDescription>Jadwal program magang/PKL</CardDescription>
+                                    </div>
+                                    <div className="bg-indigo-50 p-2 rounded-full group-hover:bg-indigo-100 transition-colors">
+                                        <Calendar className="h-5 w-5 text-indigo-600" />
+                                    </div>
                                 </div>
-                                <Calendar className="h-5 w-5 text-indigo-600" />
+                                <div className="mt-3">
+                                    <Select value={agendaFilter} onValueChange={setAgendaFilter}>
+                                        <SelectTrigger className="w-full h-8 text-[11px] font-semibold bg-white">
+                                            <div className="flex items-center gap-2">
+                                                <Filter className="h-3 w-3 text-indigo-500" />
+                                                <SelectValue placeholder="Semua Kategori" />
+                                            </div>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="ALL" className="text-xs font-medium">Semua Agenda</SelectItem>
+                                            <SelectItem value="PKL" className="text-xs font-medium text-blue-600">Filter PKL (1 & 2)</SelectItem>
+                                            <SelectItem value="MBKM" className="text-xs font-medium text-orange-600">Filter MBKM (1 & 2)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-3">
                                     {jadwalData
-                                        .filter(item => new Date(item.tanggal) >= new Date().setHours(0, 0, 0, 0))
-                                        .slice(0, 3)
+                                        .filter(item => {
+                                            const itemDate = new Date(item.tanggal);
+                                            const isFuture = itemDate >= new Date().setHours(0, 0, 0, 0);
+                                            if (!isFuture) return false;
+
+                                            if (agendaFilter === 'ALL') return true;
+                                            if (item.kategori === 'GENERAL') return true;
+                                            
+                                            // Handle PKL grouping
+                                            if (agendaFilter === 'PKL') {
+                                                return item.kategori === 'PKL1' || item.kategori === 'PKL2';
+                                            }
+                                            // Handle MBKM grouping
+                                            if (agendaFilter === 'MBKM') {
+                                                return item.kategori === 'MBKM' || item.kategori === 'MBKM2';
+                                            }
+                                            
+                                            return item.kategori === agendaFilter;
+                                        })
+                                        .slice(0, 5)
                                         .map((item) => (
-                                            <div key={item.id} className="flex items-start gap-3 p-2.5 rounded-lg border bg-white shadow-sm">
-                                                <div className="flex flex-col items-center justify-center min-w-[45px] py-1.5 bg-indigo-50 text-indigo-700 rounded-md border border-indigo-100">
-                                                    <span className="text-[9px] uppercase font-black">{new Date(item.tanggal).toLocaleDateString('id-ID', { month: 'short' })}</span>
+                                            <div key={item.id} className="flex items-start gap-3 p-2.5 rounded-lg border bg-white shadow-sm hover:border-indigo-200 transition-all group">
+                                                <div className="flex flex-col items-center justify-center min-w-[45px] py-1.5 bg-indigo-50 text-indigo-700 rounded-md border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-colors">
+                                                    <span className="text-[9px] uppercase font-black opacity-80">{new Date(item.tanggal).toLocaleDateString('id-ID', { month: 'short' })}</span>
                                                     <span className="text-base font-black leading-none">{new Date(item.tanggal).getDate()}</span>
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <h4 className="font-bold text-sm text-gray-900 truncate">{item.namaKegiatan}</h4>
+                                                    <h4 className="font-bold text-sm text-gray-900 truncate group-hover:text-indigo-700 transition-colors">{item.namaKegiatan}</h4>
                                                     <div className="flex items-center gap-1.5 mt-0.5">
-                                                        <span className="text-[9px] font-bold px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded uppercase tracking-tighter">{item.kategori}</span>
-                                                        <span className="text-[10px] text-gray-500">{formatDate(item.tanggal)}</span>
+                                                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter ${
+                                                            item.kategori === 'GENERAL' ? 'bg-slate-100 text-slate-600' :
+                                                            item.kategori.startsWith('PKL') ? 'bg-blue-50 text-blue-600' :
+                                                            'bg-orange-50 text-orange-600'
+                                                        }`}>
+                                                            {item.kategori}
+                                                        </span>
+                                                        <span className="text-[10px] text-gray-500 font-medium">{formatDate(item.tanggal)}</span>
                                                     </div>
                                                 </div>
                                             </div>
                                         ))}
-                                    {jadwalData.length === 0 && (
-                                        <p className="text-center text-gray-500 py-4 italic text-sm">Belum ada agenda kegiatan.</p>
+                                    {jadwalData.filter(item => {
+                                        if (agendaFilter === 'ALL') return true;
+                                        if (item.kategori === 'GENERAL') return true;
+                                        if (agendaFilter === 'PKL') return item.kategori === 'PKL1' || item.kategori === 'PKL2';
+                                        if (agendaFilter === 'MBKM') return item.kategori === 'MBKM' || item.kategori === 'MBKM2';
+                                        return item.kategori === agendaFilter;
+                                    }).length === 0 && (
+                                        <div className="flex flex-col items-center justify-center py-8 text-center bg-gray-50 rounded-lg border-2 border-dashed">
+                                            <Calendar className="h-8 w-8 text-gray-300 mb-2" />
+                                            <p className="text-gray-500 italic text-xs">Belum ada agenda kegiatan.</p>
+                                        </div>
                                     )}
                                 </div>
                             </CardContent>

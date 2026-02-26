@@ -15,10 +15,12 @@ exports.createSppd = async (req, res) => {
             return res.status(403).json({ message: 'Only lecturers can create SPPD' });
         }
 
-        let fotoUrl = null;
-        if (req.file) {
-            const uploadResult = await googleDriveService.uploadFile(req.file);
-            fotoUrl = uploadResult.webViewLink;
+        let fotoUrls = [];
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                const uploadResult = await googleDriveService.uploadFile(file);
+                fotoUrls.push(uploadResult.webViewLink);
+            }
         }
 
         const sppd = await Sppd.create({
@@ -28,7 +30,7 @@ exports.createSppd = async (req, res) => {
             lokasi,
             yangDitemui,
             koordinat,
-            fotoUrl,
+            fotoUrl: JSON.stringify(fotoUrls),
             keterangan
         });
 

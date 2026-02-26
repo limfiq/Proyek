@@ -91,7 +91,7 @@ export default function LoginPage() {
 
                             <div className="text-center text-sm mt-4">
                                 <span className="text-muted-foreground">Belum punya akun? </span>
-                                <Link href="/auth/register" className="text-primary hover:underline font-medium">
+                                <Link href="/register" className="text-primary hover:underline font-medium">
                                     Aktivasi Mahasiswa
                                 </Link>
                             </div>

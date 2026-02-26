@@ -7,7 +7,10 @@ const kriteriaController = require('../controllers/kriteriaController');
 const kemahasiswaanController = require('../controllers/kemahasiswaanController');
 const lokerController = require('../controllers/lokerController');
 const jadwalController = require('../controllers/jadwalController');
+const panduanController = require('../controllers/panduanController');
 const { verifyToken, isAdmin, isContentManager } = require('../middleware/authMiddleware');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Periode Routes
 router.get('/periode', verifyToken, periodeController.findAll);
@@ -74,5 +77,11 @@ router.get('/jadwal', verifyToken, jadwalController.findAll);
 router.post('/jadwal', [verifyToken, isAdmin], jadwalController.create);
 router.put('/jadwal/:id', [verifyToken, isAdmin], jadwalController.update);
 router.delete('/jadwal/:id', [verifyToken, isAdmin], jadwalController.delete);
+
+// Panduan Routes
+router.get('/panduan', verifyToken, panduanController.findAll);
+router.post('/panduan', [verifyToken, isAdmin, upload.single('file')], panduanController.create);
+router.put('/panduan/:id', [verifyToken, isAdmin, upload.single('file')], panduanController.update);
+router.delete('/panduan/:id', [verifyToken, isAdmin], panduanController.delete);
 
 module.exports = router;

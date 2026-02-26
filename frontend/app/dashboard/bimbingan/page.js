@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select"; // [NEW]
 
 import { CheckCircle, XCircle, FileText, BookOpen } from 'lucide-react';
+import { TinyEditor } from '@/components/dashboard/TinyEditor';
 
 export default function BimbinganPage() {
     const [students, setStudents] = useState([]);
@@ -327,15 +328,26 @@ export default function BimbinganPage() {
                                                 <div className="flex justify-between items-start">
                                                     <div>
                                                         <p className="font-bold text-sm">{l.tanggal}</p>
-                                                        <p className="text-sm mt-1 whitespace-pre-wrap">{l.kegiatan}</p>
+                                                        <div className="text-sm mt-1 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: l.kegiatan }} />
                                                         {l.lokasi && <p className="text-xs text-gray-500 mt-1">📍 {l.lokasi}</p>}
-                                                        {l.foto && (
-                                                            <div className="mt-2">
-                                                                <a href={l.foto} target="_blank" rel="noreferrer" className="text-blue-600 text-xs underline">
-                                                                    Lihat Foto
-                                                                </a>
-                                                            </div>
-                                                        )}
+                                                        {l.foto && (() => {
+                                                            let urls = [];
+                                                            try {
+                                                                const parsed = JSON.parse(l.foto);
+                                                                urls = Array.isArray(parsed) ? parsed : [l.foto];
+                                                            } catch (e) {
+                                                                urls = [l.foto];
+                                                            }
+                                                            return (
+                                                                <div className="flex gap-2 mt-2">
+                                                                    {urls.map((u, i) => (
+                                                                        <a key={i} href={u.startsWith('http') ? u : `${api.defaults.baseURL}${u}`} target="_blank" rel="noreferrer" className="block w-12 h-12 rounded border overflow-hidden bg-gray-50 flex-shrink-0">
+                                                                            <img src={u.startsWith('http') ? u : `${api.defaults.baseURL}${u}`} alt="Logbook" className="w-full h-full object-cover hover:scale-110 transition-transform" />
+                                                                        </a>
+                                                                    ))}
+                                                                </div>
+                                                            );
+                                                        })()}
                                                         {l.feedback && <p className="text-xs text-orange-600 mt-1">Komentar: {l.feedback}</p>}
                                                     </div>
                                                     <span className={`text-xs px-2 py-1 rounded-full ${l.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
@@ -345,13 +357,14 @@ export default function BimbinganPage() {
 
                                                 {l.status !== 'APPROVED' && (
                                                     <div className="flex items-center gap-2 mt-2">
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Beri komentar / Catatan Revisi"
-                                                            className="flex-1 text-sm p-2 border rounded"
-                                                            value={logbookFeedback[l.id] || ''}
-                                                            onChange={(e) => setLogbookFeedback(prev => ({ ...prev, [l.id]: e.target.value }))}
-                                                        />
+                                                        <div className="flex-1">
+                                                            <TinyEditor
+                                                                value={logbookFeedback[l.id] || ''}
+                                                                onChange={(content) => setLogbookFeedback(prev => ({ ...prev, [l.id]: content }))}
+                                                                placeholder="Beri komentar / Catatan Revisi..."
+                                                                height={150}
+                                                            />
+                                                        </div>
                                                         <div className="flex gap-1">
                                                             <Button size="xs" onClick={() => approveLogbook(l.id, 'APPROVED')} disabled={!periodes.find(p => String(p.id) === String(students.find(s => s.id === showLogbook)?.periodeId))?.isActive}>Approve</Button>
                                                             <Button size="xs" variant="destructive" onClick={() => approveLogbook(l.id, 'REJECTED')} disabled={!periodes.find(p => String(p.id) === String(students.find(s => s.id === showLogbook)?.periodeId))?.isActive}>Revisi</Button>
@@ -415,12 +428,11 @@ export default function BimbinganPage() {
                                                                 value={mingguanSignedFileUrl[item.id] || ''}
                                                                 onChange={(e) => setMingguanSignedFileUrl(prev => ({ ...prev, [item.id]: e.target.value }))}
                                                             />
-                                                            <textarea
-                                                                placeholder="Catatan Revisi / Feedback"
-                                                                className="text-xs p-1 border rounded"
-                                                                rows="2"
+                                                            <TinyEditor
                                                                 value={mingguanFeedback[item.id] || ''}
-                                                                onChange={(e) => setMingguanFeedback(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                                                onChange={(content) => setMingguanFeedback(prev => ({ ...prev, [item.id]: content }))}
+                                                                placeholder="Catatan Revisi / Feedback..."
+                                                                height={150}
                                                             />
                                                             <div className="flex gap-1">
                                                                 <Button size="xs" onClick={() => approveMingguan(item.id, 'APPROVED')} disabled={!periodes.find(p => String(p.id) === String(students.find(s => s.id === showMingguan)?.periodeId))?.isActive}>Approve</Button>

@@ -361,6 +361,23 @@ exports.getUjian = async (req, res) => {
     }
 };
 
+const countWorkDays = (start, end) => {
+    let count = 0;
+    let cur = new Date(start);
+    const stop = new Date(end);
+    cur.setHours(0, 0, 0, 0);
+    stop.setHours(0, 0, 0, 0);
+
+    while (cur <= stop) {
+        const day = cur.getDay();
+        if (day !== 0 && day !== 6) {
+            count++;
+        }
+        cur.setDate(cur.getDate() + 1);
+    }
+    return count;
+};
+
 exports.getDashboardStats = async (req, res) => {
     try {
         // 1. Get Active Period
@@ -424,8 +441,7 @@ exports.getDashboardStats = async (req, res) => {
                         if (p.periode && p.periode.tanggalMulai) {
                             const start = new Date(p.periode.tanggalMulai);
                             if (start <= effectiveEnd) {
-                                const diffDays = Math.ceil(Math.abs(effectiveEnd - start) / (1000 * 60 * 60 * 24)) + 1;
-                                logbookStats.daily.target += diffDays;
+                                logbookStats.daily.target += countWorkDays(start, effectiveEnd);
                             }
                         }
                         logbookStats.daily.filled += filledDaily;
@@ -443,7 +459,8 @@ exports.getDashboardStats = async (req, res) => {
                         if (p.periode && p.periode.tanggalMulai) {
                             const start = new Date(p.periode.tanggalMulai);
                             if (start <= effectiveEnd) {
-                                const diffWeeks = Math.ceil(Math.ceil(Math.abs(effectiveEnd - start) / (1000 * 60 * 60 * 24)) / 7);
+                                const totalDays = Math.ceil(Math.abs(effectiveEnd - start) / (1000 * 60 * 60 * 24)) + 1;
+                                const diffWeeks = Math.ceil(totalDays / 7);
                                 logbookStats.weekly.target += diffWeeks;
                             }
                         }
@@ -502,8 +519,7 @@ exports.getDashboardStats = async (req, res) => {
                         if (pendaftaran.periode && pendaftaran.periode.tanggalMulai) {
                             const start = new Date(pendaftaran.periode.tanggalMulai);
                             if (start <= effectiveEnd) {
-                                const diffDays = Math.ceil(Math.abs(effectiveEnd - start) / (1000 * 60 * 60 * 24)) + 1;
-                                logbookStats.daily.target = diffDays;
+                                logbookStats.daily.target = countWorkDays(start, effectiveEnd);
                             }
                         }
 
@@ -516,7 +532,8 @@ exports.getDashboardStats = async (req, res) => {
                         if (pendaftaran.periode && pendaftaran.periode.tanggalMulai) {
                             const start = new Date(pendaftaran.periode.tanggalMulai);
                             if (start <= effectiveEnd) {
-                                const diffWeeks = Math.ceil(Math.ceil(Math.abs(effectiveEnd - start) / (1000 * 60 * 60 * 24)) / 7);
+                                const totalDays = Math.ceil(Math.abs(effectiveEnd - start) / (1000 * 60 * 60 * 24)) + 1;
+                                const diffWeeks = Math.ceil(totalDays / 7);
                                 logbookStats.weekly.target = diffWeeks;
                             }
                         }
