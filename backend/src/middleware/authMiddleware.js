@@ -17,7 +17,8 @@ const verifyToken = (req, res, next) => {
 
     jwt.verify(splitToken[1], process.env.JWT_SECRET, (err, decoded) => {
         if (err) {
-            return res.status(401).send({ message: 'Unauthorized!' });
+            console.error('JWT Verification Error:', err.message);
+            return res.status(401).send({ message: 'Unauthorized! ' + err.message });
         }
         req.userId = decoded.id;
         req.userRole = decoded.role;

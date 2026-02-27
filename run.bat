@@ -7,8 +7,8 @@ start cmd /k "cd backend && npm run dev"
 
 REM Start frontend server in a new window
 timeout /t 2
-echo Starting frontend (npm run start)...
-start cmd /k "cd sidemi && npm run start"
+echo Starting frontend (npm run dev)...
+start cmd /k "cd frontend && npm run dev"
 
 echo Both servers are running!
 echo Backend: will be available shortly
