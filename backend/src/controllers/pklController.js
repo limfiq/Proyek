@@ -426,47 +426,39 @@ exports.getDashboardStats = async (req, res) => {
                     const activeEnd = activePeriode.tanggalSelesai ? new Date(activePeriode.tanggalSelesai) : now;
                     const effectiveEnd = now < activeEnd ? now : activeEnd;
 
-                    for (const p of pendaftarans) {
+                    // Calculate detailed logbook stats in parallel
+                    const statsResults = await Promise.all(pendaftarans.map(async (p) => {
                         const pId = p.id;
+                        const [filledDaily, pendingDaily, filledWeekly, pendingWeekly] = await Promise.all([
+                            db.LaporanHarian.count({ where: { pendaftaranId: pId } }),
+                            db.LaporanHarian.count({ where: { pendaftaranId: pId, status: 'SUBMITTED' } }),
+                            db.LaporanMingguan.count({ where: { pendaftaranId: pId } }),
+                            db.LaporanMingguan.count({ where: { pendaftaranId: pId, status: 'PENDING' } })
+                        ]);
 
-                        // Daily Stats
-                        const filledDaily = await db.LaporanHarian.count({ where: { pendaftaranId: pId } });
-                        const pendingDaily = await db.LaporanHarian.count({
-                            where: {
-                                pendaftaranId: pId,
-                                status: 'SUBMITTED' // Assuming SUBMITTED = needs response
-                            }
-                        });
-
-                        if (p.periode && p.periode.tanggalMulai) {
-                            const start = new Date(p.periode.tanggalMulai);
-                            if (start <= effectiveEnd) {
-                                logbookStats.daily.target += countWorkDays(start, effectiveEnd);
-                            }
-                        }
-                        logbookStats.daily.filled += filledDaily;
-                        logbookStats.daily.pending += pendingDaily;
-
-                        // Weekly Stats
-                        const filledWeekly = await db.LaporanMingguan.count({ where: { pendaftaranId: pId } });
-                        const pendingWeekly = await db.LaporanMingguan.count({
-                            where: {
-                                pendaftaranId: pId,
-                                status: 'PENDING' // Weekly model uses PENDING as default
-                            }
-                        });
+                        let dailyTarget = 0;
+                        let weeklyTarget = 0;
 
                         if (p.periode && p.periode.tanggalMulai) {
                             const start = new Date(p.periode.tanggalMulai);
                             if (start <= effectiveEnd) {
+                                dailyTarget = countWorkDays(start, effectiveEnd);
                                 const totalDays = Math.ceil(Math.abs(effectiveEnd - start) / (1000 * 60 * 60 * 24)) + 1;
-                                const diffWeeks = Math.ceil(totalDays / 7);
-                                logbookStats.weekly.target += diffWeeks;
+                                weeklyTarget = Math.ceil(totalDays / 7);
                             }
                         }
-                        logbookStats.weekly.filled += filledWeekly;
-                        logbookStats.weekly.pending += pendingWeekly;
-                    }
+
+                        return { filledDaily, pendingDaily, filledWeekly, pendingWeekly, dailyTarget, weeklyTarget };
+                    }));
+
+                    statsResults.forEach(res => {
+                        logbookStats.daily.filled += res.filledDaily;
+                        logbookStats.daily.pending += res.pendingDaily;
+                        logbookStats.daily.target += res.dailyTarget;
+                        logbookStats.weekly.filled += res.filledWeekly;
+                        logbookStats.weekly.pending += res.pendingWeekly;
+                        logbookStats.weekly.target += res.weeklyTarget;
+                    });
 
                     // Count Ujian (Sidang)
                     const ujianCount = await db.Sidang.count({
@@ -516,25 +508,25 @@ exports.getDashboardStats = async (req, res) => {
                             where: { pendaftaranId: pId, status: 'SUBMITTED' }
                         });
 
+                        // Parallel fetch for student
+                        const [filledDaily, pendingDaily, filledWeekly, pendingWeekly] = await Promise.all([
+                            db.LaporanHarian.count({ where: { pendaftaranId: pId } }),
+                            db.LaporanHarian.count({ where: { pendaftaranId: pId, status: 'SUBMITTED' } }),
+                            db.LaporanMingguan.count({ where: { pendaftaranId: pId } }),
+                            db.LaporanMingguan.count({ where: { pendaftaranId: pId, status: 'PENDING' } })
+                        ]);
+
+                        logbookStats.daily.filled = filledDaily;
+                        logbookStats.daily.pending = pendingDaily;
+                        logbookStats.weekly.filled = filledWeekly;
+                        logbookStats.weekly.pending = pendingWeekly;
+
                         if (pendaftaran.periode && pendaftaran.periode.tanggalMulai) {
                             const start = new Date(pendaftaran.periode.tanggalMulai);
                             if (start <= effectiveEnd) {
                                 logbookStats.daily.target = countWorkDays(start, effectiveEnd);
-                            }
-                        }
-
-                        // Weekly
-                        logbookStats.weekly.filled = await db.LaporanMingguan.count({ where: { pendaftaranId: pId } });
-                        logbookStats.weekly.pending = await db.LaporanMingguan.count({
-                            where: { pendaftaranId: pId, status: 'PENDING' }
-                        });
-
-                        if (pendaftaran.periode && pendaftaran.periode.tanggalMulai) {
-                            const start = new Date(pendaftaran.periode.tanggalMulai);
-                            if (start <= effectiveEnd) {
                                 const totalDays = Math.ceil(Math.abs(effectiveEnd - start) / (1000 * 60 * 60 * 24)) + 1;
-                                const diffWeeks = Math.ceil(totalDays / 7);
-                                logbookStats.weekly.target = diffWeeks;
+                                logbookStats.weekly.target = Math.ceil(totalDays / 7);
                             }
                         }
 

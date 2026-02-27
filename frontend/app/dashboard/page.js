@@ -7,6 +7,7 @@ import api from '@/lib/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Users, Calendar, CheckCircle, Clock, FileText, Phone, Filter } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardPage() {
     const [user, setUser] = useState(null);
@@ -16,6 +17,7 @@ export default function DashboardPage() {
     const [pendaftaranData, setPendaftaranData] = useState(null);
     const [jadwalData, setJadwalData] = useState([]);
     const [agendaFilter, setAgendaFilter] = useState('ALL');
+    const [isLoading, setIsLoading] = useState(true);
 
     const formatDate = (dateString) => {
         if (!dateString) return '-';
@@ -31,11 +33,16 @@ export default function DashboardPage() {
         }
         if (userRole) {
             setRole(userRole);
-            fetchStats();
-            fetchJadwal();
-            if (userRole === 'MAHASISWA') {
-                fetchStudentData();
-            }
+            const init = async () => {
+                setIsLoading(true);
+                const promises = [fetchStats(), fetchJadwal()];
+                if (userRole === 'MAHASISWA') {
+                    promises.push(fetchStudentData());
+                }
+                await Promise.all(promises);
+                setIsLoading(false);
+            };
+            init();
         }
     }, []);
 
@@ -87,6 +94,35 @@ export default function DashboardPage() {
     };
 
     const Widgets = () => {
+        if (isLoading) {
+            return (
+                <div className="space-y-6">
+                    <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+                        {[1, 2, 3, 4].map((i) => (
+                            <Card key={i}>
+                                <CardHeader className="pb-2">
+                                    <Skeleton className="h-4 w-24" />
+                                </CardHeader>
+                                <CardContent>
+                                    <Skeleton className="h-8 w-32 mb-2" />
+                                    <Skeleton className="h-3 w-40" />
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                    <div className="grid gap-6 md:grid-cols-3">
+                        <Card className="md:col-span-2">
+                            <CardHeader><Skeleton className="h-6 w-48" /></CardHeader>
+                            <CardContent><Skeleton className="h-[200px] w-full" /></CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
+                            <CardContent><Skeleton className="h-[200px] w-full" /></CardContent>
+                        </Card>
+                    </div>
+                </div>
+            )
+        }
         if (role === 'MAHASISWA') {
             return (
                 <div className="space-y-6">
@@ -380,7 +416,7 @@ export default function DashboardPage() {
 
                                             if (agendaFilter === 'ALL') return true;
                                             if (item.kategori === 'GENERAL') return true;
-                                            
+
                                             // Handle PKL grouping
                                             if (agendaFilter === 'PKL') {
                                                 return item.kategori === 'PKL1' || item.kategori === 'PKL2';
@@ -389,7 +425,7 @@ export default function DashboardPage() {
                                             if (agendaFilter === 'MBKM') {
                                                 return item.kategori === 'MBKM' || item.kategori === 'MBKM2';
                                             }
-                                            
+
                                             return item.kategori === agendaFilter;
                                         })
                                         .slice(0, 5)
@@ -402,11 +438,10 @@ export default function DashboardPage() {
                                                 <div className="flex-1 min-w-0">
                                                     <h4 className="font-bold text-sm text-gray-900 truncate group-hover:text-indigo-700 transition-colors">{item.namaKegiatan}</h4>
                                                     <div className="flex items-center gap-1.5 mt-0.5">
-                                                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter ${
-                                                            item.kategori === 'GENERAL' ? 'bg-slate-100 text-slate-600' :
+                                                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter ${item.kategori === 'GENERAL' ? 'bg-slate-100 text-slate-600' :
                                                             item.kategori.startsWith('PKL') ? 'bg-blue-50 text-blue-600' :
-                                                            'bg-orange-50 text-orange-600'
-                                                        }`}>
+                                                                'bg-orange-50 text-orange-600'
+                                                            }`}>
                                                             {item.kategori}
                                                         </span>
                                                         <span className="text-[10px] text-gray-500 font-medium">{formatDate(item.tanggal)}</span>
@@ -421,11 +456,11 @@ export default function DashboardPage() {
                                         if (agendaFilter === 'MBKM') return item.kategori === 'MBKM' || item.kategori === 'MBKM2';
                                         return item.kategori === agendaFilter;
                                     }).length === 0 && (
-                                        <div className="flex flex-col items-center justify-center py-8 text-center bg-gray-50 rounded-lg border-2 border-dashed">
-                                            <Calendar className="h-8 w-8 text-gray-300 mb-2" />
-                                            <p className="text-gray-500 italic text-xs">Belum ada agenda kegiatan.</p>
-                                        </div>
-                                    )}
+                                            <div className="flex flex-col items-center justify-center py-8 text-center bg-gray-50 rounded-lg border-2 border-dashed">
+                                                <Calendar className="h-8 w-8 text-gray-300 mb-2" />
+                                                <p className="text-gray-500 italic text-xs">Belum ada agenda kegiatan.</p>
+                                            </div>
+                                        )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -615,7 +650,6 @@ export default function DashboardPage() {
             );
         }
 
-        if ((role === 'ADMIN' || role === 'DOSEN') && !stats) return <p className="text-center p-4">Loading Dashboard...</p>;
         return null;
     };
 
