@@ -8,6 +8,7 @@ import { Check, X, Trash2, Edit } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import api from '@/lib/api';
+import { formatDate } from '@/lib/utils';
 
 export default function MasterPeriodePage() {
     const [periodes, setPeriodes] = useState([]);
@@ -148,9 +149,9 @@ export default function MasterPeriodePage() {
                         <div>
                             <p className="font-bold text-lg">{p.nama}</p>
                             <p className="text-sm text-gray-500 mb-1">
-                                {p.tanggalMulai ? new Date(p.tanggalMulai).toLocaleDateString('id-ID') : '-'}
+                                {formatDate(p.tanggalMulai)}
                                 {' s/d '}
-                                {p.tanggalSelesai ? new Date(p.tanggalSelesai).toLocaleDateString('id-ID') : '-'}
+                                {formatDate(p.tanggalSelesai)}
                             </p>
                             <p className={`text-sm ${p.isActive ? 'text-green-600 font-bold' : 'text-gray-500'}`}>
                                 {p.isActive ? 'AKTIF' : 'TIDAK AKTIF'}

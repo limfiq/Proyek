@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/popover"
 import api from '@/lib/api';
 import { Plus, Calendar, User, UserCheck, Printer, Check, ChevronsUpDown, Download, FileSpreadsheet, Search } from 'lucide-react';
-import { cn } from "@/lib/utils"
+import { cn, formatDate } from "@/lib/utils"
 import { Pagination } from '@/components/ui/pagination';
 import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 import {
@@ -293,7 +293,7 @@ export default function AdminSidangPage() {
                 Instansi: r.instansi?.nama,
                 Pembimbing: r.pembimbing?.nama || '-',
                 Penguji: sidang?.penguji?.nama || '-',
-                Tanggal: sidang?.tanggal ? new Date(sidang.tanggal).toLocaleDateString('id-ID') : '-',
+                Tanggal: formatDate(sidang?.tanggal),
                 Ruang: sidang?.ruang || '-',
                 Sesi: sidang?.sesi || '-'
             };
@@ -312,7 +312,7 @@ export default function AdminSidangPage() {
                 r.instansi?.nama,
                 r.pembimbing?.nama || '-',
                 sidang?.penguji?.nama || '-',
-                sidang?.tanggal ? new Date(sidang.tanggal).toLocaleDateString('id-ID') : '-',
+                formatDate(sidang?.tanggal),
                 sidang?.ruang || '-',
                 sidang?.sesi || '-'
             ];
@@ -430,7 +430,7 @@ export default function AdminSidangPage() {
             <div id="printable-area" className="rounded-xl border bg-white shadow-sm overflow-hidden print:border-none print:shadow-none">
                 <div className="hidden print:block text-center mb-6 pt-4">
                     <h1 className="text-2xl font-bold uppercase">Jadwal Sidang Magang</h1>
-                    <p className="text-sm text-gray-500">{new Date().toLocaleDateString('id-ID', { dateStyle: 'full' })}</p>
+                    <p className="text-sm text-gray-500">{formatDate(new Date())}</p>
                 </div>
                 <table className="w-full text-sm">
                     <thead>
@@ -465,7 +465,7 @@ export default function AdminSidangPage() {
                                                 </div>
                                                 <div className="flex items-center gap-2 text-gray-500 text-xs">
                                                     <Calendar className="h-3 w-3" />
-                                                    {sidang.tanggal ? new Date(sidang.tanggal).toLocaleDateString('id-ID', { dateStyle: 'long' }) : '-'}
+                                                    {formatDate(sidang.tanggal)}
                                                 </div>
                                                 <div className="text-gray-500 text-xs mt-1">
                                                     {sidang.ruang && <span className="mr-2">Ruang: {sidang.ruang}</span>}

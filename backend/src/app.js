@@ -45,6 +45,7 @@ const masterRoutes = require('./routes/masterRoutes');
 const pklRoutes = require('./routes/pklRoutes');
 const nilaiRoutes = require('./routes/nilaiRoutes');
 const publicRoutes = require('./routes/publicRoutes');
+const seedService = require('./services/seedService');
 app.use('/auth', authRoutes);
 app.use('/api', masterRoutes);
 app.use('/api', pklRoutes);
@@ -67,6 +68,9 @@ const startServer = async () => {
         // Sync models with database (alter: true updates schema without dropping data)
         await db.sequelize.sync({ alter: false });
         console.log('Database synced.');
+
+        // Initial seeding if database is empty
+        await seedService.runSeedIfEmpty(db);
 
         // Bind to 0.0.0.0 so the server is reachable from other devices on the network
         app.listen(port, '0.0.0.0', () => {

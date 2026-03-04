@@ -14,6 +14,7 @@ import {
     Clock
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import { formatDate } from '@/lib/utils';
 
 export default function LowonganDetailPage() {
     const params = useParams();
@@ -136,7 +137,7 @@ export default function LowonganDetailPage() {
                                         <div className="p-2 bg-gray-50 rounded-lg"><Calendar className="h-5 w-5 text-gray-500" /></div>
                                         <div className="text-sm">
                                             <div className="text-gray-400 text-xs uppercase font-bold tracking-wider">Diperbarui</div>
-                                            {new Date(job.updatedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                            {formatDate(job.updatedAt)}
                                         </div>
                                     </div>
                                 </div>

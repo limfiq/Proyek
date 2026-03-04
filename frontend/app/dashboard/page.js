@@ -6,8 +6,9 @@ import { motion } from 'framer-motion';
 import api from '@/lib/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Users, Calendar, CheckCircle, Clock, FileText, Phone, Filter } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectValue, SelectTrigger } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatDate } from '@/lib/utils';
 
 export default function DashboardPage() {
     const [user, setUser] = useState(null);
@@ -19,11 +20,6 @@ export default function DashboardPage() {
     const [agendaFilter, setAgendaFilter] = useState('ALL');
     const [isLoading, setIsLoading] = useState(true);
 
-    const formatDate = (dateString) => {
-        if (!dateString) return '-';
-        const date = new Date(dateString);
-        return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    };
 
     useEffect(() => {
         const userData = localStorage.getItem('user');

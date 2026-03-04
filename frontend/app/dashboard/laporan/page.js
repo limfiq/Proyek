@@ -4,13 +4,14 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Upload, Camera, MapPin, RefreshCw, ChevronDown, ChevronRight, Calendar as CalendarIcon, AlertCircle } from 'lucide-react';
+import { FileText, Upload, Camera, MapPin, RefreshCw, ChevronDown, ChevronRight, Calendar as CalendarIcon, AlertCircle, ExternalLink } from 'lucide-react';
 import { Pagination } from '@/components/ui/pagination';
 import api from '@/lib/api';
 import { motion } from 'framer-motion';
 import Webcam from 'react-webcam';
 import { useToast } from "@/components/ui/use-toast";
 import { TinyEditor } from '@/components/dashboard/TinyEditor';
+import { formatDate, formatDateTime } from '@/lib/utils';
 
 export default function LaporanPage() {
     const [activeTab, setActiveTab] = useState('harian');
@@ -583,7 +584,7 @@ export default function LaporanPage() {
                                                             <div className="flex-1">
                                                                 <div className="flex items-center gap-2 mb-1">
                                                                     <CalendarIcon className="h-3.5 w-3.5 text-primary/60" />
-                                                                    <p className="font-bold text-gray-800">{new Date(item.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                                                    <p className="font-bold text-gray-800">{formatDate(item.tanggal)}</p>
                                                                 </div>
                                                                 <div className="text-sm text-gray-600 mt-2 prose prose-sm max-w-none prose-p:leading-relaxed prose-headings:mb-1" dangerouslySetInnerHTML={{ __html: item.kegiatan }} />
                                                                 {item.lokasi && (
@@ -827,7 +828,7 @@ export default function LaporanPage() {
                             </Card>
                             {laporanTengah && (
                                 <div className="text-[10px] text-gray-400 text-right italic">
-                                    Terakhir diperbarui: {new Date(laporanTengah.updatedAt).toLocaleString('id-ID')}
+                                    Terakhir diperbarui: {formatDateTime(laporanTengah.updatedAt)}
                                 </div>
                             )}
                         </div>
@@ -940,7 +941,7 @@ export default function LaporanPage() {
                             </Card>
                             {laporanAkhir && (
                                 <div className="text-[10px] text-gray-400 text-right italic">
-                                    Terakhir diperbarui: {new Date(laporanAkhir.updatedAt).toLocaleString('id-ID')}
+                                    Terakhir diperbarui: {formatDateTime(laporanAkhir.updatedAt)}
                                 </div>
                             )}
                         </div>

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Pagination } from '@/components/ui/pagination';
 import api from '@/lib/api';
+import { formatDate } from '@/lib/utils';
 import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 import Link from 'next/link';
 
@@ -232,11 +233,11 @@ export default function InfoLokerPage() {
                                                 <TableCell>{app.mahasiswa?.nama || 'N/A'}</TableCell>
                                                 <TableCell>{app.mahasiswa?.nim || 'N/A'}</TableCell>
                                                 <TableCell>{app.mahasiswa?.prodiId || '-'}</TableCell>
-                                                <TableCell>{new Date(app.createdAt).toLocaleDateString()}</TableCell>
+                                                <TableCell>{formatDate(app.createdAt)}</TableCell>
                                                 <TableCell>
                                                     <span className={`px-2 py-1 rounded text-xs font-semibold ${app.status === 'APPROVED' || app.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
-                                                            app.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
-                                                                'bg-yellow-100 text-yellow-700'
+                                                        app.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                                                            'bg-yellow-100 text-yellow-700'
                                                         }`}>
                                                         {app.status}
                                                     </span>

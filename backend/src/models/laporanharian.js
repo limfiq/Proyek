@@ -31,6 +31,10 @@ module.exports = (sequelize, DataTypes) => {
     }, {
         sequelize,
         modelName: 'LaporanHarian',
+        indexes: [
+            { fields: ['pendaftaranId'] },
+            { fields: ['status'] }
+        ]
     });
     return LaporanHarian;
 };

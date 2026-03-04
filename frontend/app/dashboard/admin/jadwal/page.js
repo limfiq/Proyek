@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar, Trash2, Edit2, Plus, RefreshCw } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from "@/components/ui/use-toast";
+import { formatDate } from '@/lib/utils';
 
 export default function AdminJadwalPage() {
     const { toast } = useToast();
@@ -98,13 +99,6 @@ export default function AdminJadwalPage() {
         }
     };
 
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-        });
-    };
 
     return (
         <div className="p-6 space-y-6">

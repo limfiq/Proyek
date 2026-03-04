@@ -13,6 +13,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"; // [NEW]
 import api from '@/lib/api';
+import { formatDate } from '@/lib/utils';
 
 export default function SidangPage() {
     const [students, setStudents] = useState([]);
@@ -152,7 +153,7 @@ export default function SidangPage() {
                                             <div className="flex items-center gap-2">
                                                 <Calendar className="h-3 w-3 text-blue-500" />
                                                 <span className="font-medium">
-                                                    {new Date(mhs.sidang?.tanggal || mhs.tanggalSidang).toLocaleDateString('id-ID', { dateStyle: 'long' })}
+                                                    {formatDate(mhs.sidang?.tanggal || mhs.tanggalSidang)}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2">

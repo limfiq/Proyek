@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import Navbar from '@/components/Navbar';
 import api from '@/lib/api';
+import { formatDate } from '@/lib/utils';
 
 export default function PanduanPublicPage() {
     const [guides, setGuides] = useState([]);
@@ -59,13 +60,6 @@ export default function PanduanPublicPage() {
         }
     };
 
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('id-ID', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    };
 
     const getFullUrl = (path) => {
         if (!path) return '';

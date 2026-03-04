@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, Trash2, Edit } from 'lucide-react';
 import api from '@/lib/api';
+import { formatDate } from '@/lib/utils';
 
 export default function KegiatanPage() {
     const [kegiatanList, setKegiatanList] = useState([]);
@@ -67,13 +68,11 @@ export default function KegiatanPage() {
                                     <td className="p-4 font-medium text-gray-800">{item.judul}</td>
                                     <td className="p-4 text-gray-600">{item.lokasi}</td>
                                     <td className="p-4 text-gray-600 text-sm">
-                                        {new Date(item.tanggal).toLocaleDateString('id-ID', {
-                                            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-                                        })}
+                                        {formatDate(item.tanggal)}
                                     </td>
                                     <td className="p-4">
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.status === 'UPCOMING' ? 'bg-blue-100 text-blue-700' :
-                                                item.status === 'OPEN' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                            item.status === 'OPEN' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                                             }`}>
                                             {item.status}
                                         </span>

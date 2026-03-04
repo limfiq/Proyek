@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { MapPin, Camera, Save, Info, CheckCircle, FileText, Calendar as CalendarIcon, Users, RefreshCw, Upload } from 'lucide-react';
 import api from '@/lib/api';
 import { motion } from 'framer-motion';
+import { formatDate } from '@/lib/utils';
 import Webcam from 'react-webcam';
 import { useToast } from "@/components/ui/use-toast";
 
@@ -136,13 +137,6 @@ export default function SppdPage() {
         }
     };
 
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-        });
-    };
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">

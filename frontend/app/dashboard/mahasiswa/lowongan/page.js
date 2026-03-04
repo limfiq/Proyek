@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Building2, MapPin, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import api from '@/lib/api';
+import { formatDate } from '@/lib/utils';
 
 export default function StudentLokerPage() {
     const [lokers, setLokers] = useState([]);
@@ -85,14 +86,14 @@ export default function StudentLokerPage() {
                                             <td className="p-3">{app.tipe}</td>
                                             <td className="p-3">
                                                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${app.status === 'APPROVED' || app.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
-                                                        app.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
-                                                            'bg-yellow-100 text-yellow-700'
+                                                    app.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                                                        'bg-yellow-100 text-yellow-700'
                                                     }`}>
                                                     {app.status}
                                                 </span>
                                             </td>
                                             <td className="p-3">
-                                                {new Date(app.createdAt).toLocaleDateString()}
+                                                {formatDate(app.createdAt)}
                                             </td>
                                         </tr>
                                     ))}
