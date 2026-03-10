@@ -19,6 +19,7 @@ export default function DashboardPage() {
     const [jadwalData, setJadwalData] = useState([]);
     const [agendaFilter, setAgendaFilter] = useState('ALL');
     const [isLoading, setIsLoading] = useState(true);
+    const [isRevisionExpanded, setIsRevisionExpanded] = useState(false);
 
 
     useEffect(() => {
@@ -45,7 +46,7 @@ export default function DashboardPage() {
     const fetchStudentData = async () => {
         try {
             const pklRes = await api.get('/api/pkl/me');
-            const allPkl = Array.isArray(pklRes.data) ? pklRes.data : [pklRes.data];
+            const allPkl = (Array.isArray(pklRes.data) ? pklRes.data : [pklRes.data]).filter(p => p !== null && p !== undefined);
             const activePkl = allPkl.find(p => p.periode && p.periode.isActive);
             const pklData = activePkl || allPkl[0];
 
@@ -192,7 +193,7 @@ export default function DashboardPage() {
                         </Card>
 
                         {/* Revision Card */}
-                        <Card className={studentSidang && studentSidang.revisiPenguji ? "border-amber-200 bg-amber-50" : ""}>
+                        <Card className={`${studentSidang && studentSidang.revisiPenguji ? "border-amber-200 bg-amber-50 md:col-span-2" : ""}`}>
                             <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
                                 <CardTitle className="text-sm font-medium">Revisi Dosen</CardTitle>
                                 <Calendar className="h-4 w-4 text-amber-500" />
@@ -200,10 +201,20 @@ export default function DashboardPage() {
                             <CardContent>
                                 {studentSidang && studentSidang.revisiPenguji ? (
                                     <div className="space-y-1">
-                                        <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-[100px] overflow-y-auto">
+                                        <motion.div
+                                            initial={false}
+                                            animate={{ height: isRevisionExpanded ? 'auto' : 100 }}
+                                            className="text-sm text-gray-700 whitespace-pre-wrap overflow-hidden"
+                                        >
                                             {studentSidang.revisiPenguji}
-                                        </div>
-                                        <p className="text-xs text-muted-foreground mt-2">Segera perbaiki dan temui dosen.</p>
+                                        </motion.div>
+                                        <button
+                                            onClick={() => setIsRevisionExpanded(!isRevisionExpanded)}
+                                            className="text-xs font-bold text-amber-600 hover:text-amber-700 mt-2 flex items-center gap-1"
+                                        >
+                                            {isRevisionExpanded ? 'Sembunyikan' : 'Lihat Selengkapnya'}
+                                        </button>
+                                        <p className="text-xs text-muted-foreground mt-2 font-medium">Segera perbaiki dan temui dosen.</p>
                                     </div>
                                 ) : (
                                     <div>
@@ -228,12 +239,12 @@ export default function DashboardPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                {jadwalData
-                                    .filter(item => item.kategori === 'GENERAL' || (pendaftaranData && item.kategori === pendaftaranData.tipe))
-                                    .filter(item => new Date(item.tanggal) >= new Date().setHours(0, 0, 0, 0))
+                                {jadwalData && jadwalData
+                                    .filter(item => item && (item.kategori === 'GENERAL' || (pendaftaranData && item.kategori === pendaftaranData.tipe)))
+                                    .filter(item => item.tanggal && new Date(item.tanggal) >= new Date().setHours(0, 0, 0, 0))
                                     .slice(0, 5)
                                     .map((item) => (
-                                        <div key={item.id} className="flex items-center gap-4 p-3 rounded-lg border bg-gray-50/50 hover:bg-white transition-colors">
+                                        <div key={item.id || Math.random()} className="flex items-center gap-4 p-3 rounded-lg border bg-gray-50/50 hover:bg-white transition-colors">
                                             <div className="flex flex-col items-center justify-center min-w-[60px] p-2 bg-indigo-600 text-white rounded-md shadow-sm">
                                                 <span className="text-[10px] uppercase font-bold text-indigo-100">{new Date(item.tanggal).toLocaleDateString('id-ID', { month: 'short' })}</span>
                                                 <span className="text-xl font-black leading-none">{new Date(item.tanggal).getDate()}</span>
@@ -250,7 +261,7 @@ export default function DashboardPage() {
                                             </div>
                                         </div>
                                     ))}
-                                {jadwalData.filter(item => item.kategori === 'GENERAL' || (pendaftaranData && item.kategori === pendaftaranData.tipe)).length === 0 && (
+                                {(jadwalData || []).filter(item => item && (item.kategori === 'GENERAL' || (pendaftaranData && item.kategori === pendaftaranData.tipe))).length === 0 && (
                                     <p className="text-center text-gray-500 py-4 italic text-sm">Belum ada jadwal kegiatan mendatang.</p>
                                 )}
                             </div>
@@ -404,8 +415,9 @@ export default function DashboardPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-3">
-                                    {jadwalData
+                                    {jadwalData && jadwalData
                                         .filter(item => {
+                                            if (!item) return false;
                                             const itemDate = new Date(item.tanggal);
                                             const isFuture = itemDate >= new Date().setHours(0, 0, 0, 0);
                                             if (!isFuture) return false;
@@ -493,7 +505,7 @@ export default function DashboardPage() {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y">
-                                                    {stats.bimbinganList.map((mhs) => (
+                                                    {stats.bimbinganList.filter(mhs => mhs).map((mhs) => (
                                                         <tr key={mhs.id} className="hover:bg-slate-50 transition-colors">
                                                             <td className="py-3">
                                                                 <div className="font-bold text-gray-900">{mhs.nama}</div>
@@ -532,7 +544,7 @@ export default function DashboardPage() {
         if (role === 'ADMIN' && stats) {
             return (
                 <div className="space-y-6">
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+                    <div className="grid gap-4 md:grid-cols-2">
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Periode Aktif</CardTitle>
@@ -553,6 +565,9 @@ export default function DashboardPage() {
                                 <p className="text-xs text-muted-foreground">Mahasiswa terdaftar</p>
                             </CardContent>
                         </Card>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">PKL 1</CardTitle>
@@ -623,7 +638,7 @@ export default function DashboardPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    {stats.recent.map((item) => (
+                                    {stats.recent.filter(item => item).map((item) => (
                                         <div key={item.id} className="flex items-center">
                                             <div className="ml-4 space-y-1">
                                                 <p className="text-sm font-medium leading-none">{item.nama}</p>

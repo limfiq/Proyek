@@ -19,6 +19,10 @@ module.exports = (sequelize, DataTypes) => {
         status: {
             type: DataTypes.ENUM('SUBMITTED', 'APPROVED', 'REJECTED'),
             defaultValue: 'SUBMITTED'
+        },
+        feedback: {
+            type: DataTypes.TEXT,
+            allowNull: true
         }
     }, {
         sequelize,

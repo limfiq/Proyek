@@ -37,6 +37,7 @@ router.put('/laporan/harian/:id/approve', verifyToken, laporanController.approve
 router.put('/laporan/harian/:id/feedback', verifyToken, laporanController.updateFeedbackHarian);
 router.post('/laporan/tengah', verifyToken, laporanController.submitTengah);
 router.get('/laporan/tengah', verifyToken, laporanController.getTengah);
+router.put('/laporan/tengah/:id/approve', verifyToken, laporanController.approveTengah);
 router.post('/laporan/akhir', verifyToken, laporanController.submitAkhir);
 router.get('/laporan/akhir', verifyToken, laporanController.getAkhir);
 
@@ -49,5 +50,6 @@ const sppdController = require('../controllers/sppdController');
 router.post('/sppd', verifyToken, upload.array('foto', 5), sppdController.createSppd);
 router.get('/sppd', verifyToken, sppdController.getSppdList);
 router.get('/sppd/bimbingan', verifyToken, sppdController.getBimbinganLocations);
+router.get('/sppd/admin/all', verifyToken, sppdController.getAllSppd);
 
 module.exports = router;

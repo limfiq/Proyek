@@ -54,12 +54,8 @@ const seedInitialData = async (db) => {
         // 8. Users
         await queryInterface.bulkInsert('Users', [
             { username: 'admin_demo', password: passwordHash, role: 'ADMIN', createdAt: timestamp, updatedAt: timestamp },
-            { username: 'dosen_demo1', password: passwordHash, role: 'DOSEN', createdAt: timestamp, updatedAt: timestamp },
-            { username: 'dosen_demo2', password: passwordHash, role: 'DOSEN', createdAt: timestamp, updatedAt: timestamp },
-            { username: 'mhs_demo1', password: passwordHash, role: 'MAHASISWA', createdAt: timestamp, updatedAt: timestamp },
-            { username: 'mhs_demo2', password: passwordHash, role: 'MAHASISWA', createdAt: timestamp, updatedAt: timestamp },
+             { username: 'mhs_demo1', password: passwordHash, role: 'MAHASISWA', createdAt: timestamp, updatedAt: timestamp },
             { username: 'instansi_demo1', password: passwordHash, role: 'INSTANSI', createdAt: timestamp, updatedAt: timestamp },
-            { username: 'instansi_demo2', password: passwordHash, role: 'INSTANSI', createdAt: timestamp, updatedAt: timestamp }
         ], { ignoreDuplicates: true });
 
         const [userRows] = await db.sequelize.query(`SELECT id, username FROM Users`);

@@ -33,7 +33,8 @@ export default function PendaftaranPage() {
     const loadInstansi = async () => {
         try {
             const res = await api.get('/api/instansi');
-            setInstansiList(res.data);
+            const data = (Array.isArray(res.data) ? res.data : [res.data]).filter(i => i !== null && i !== undefined);
+            setInstansiList(data);
         } catch (err) {
             console.error(err);
         }
@@ -43,8 +44,8 @@ export default function PendaftaranPage() {
         try {
             const res = await api.get('/api/pkl/me');
             if (res.data) {
-                // Ensure array, as API returns array
-                const data = Array.isArray(res.data) ? res.data : [res.data];
+                // Ensure array and filter out nulls
+                const data = (Array.isArray(res.data) ? res.data : [res.data]).filter(r => r !== null && r !== undefined);
                 setRegistrationList(data);
             }
 
@@ -100,7 +101,7 @@ export default function PendaftaranPage() {
                     kontak: formData.newInstansiKontak,
                     isProposed: true
                 });
-                finalInstansiId = resIs.data.id;
+                finalInstansiId = resIs.data?.id;
             }
 
             await api.post('/api/pkl/register', {
@@ -134,8 +135,8 @@ export default function PendaftaranPage() {
                             <div className="mb-8 space-y-4">
                                 <h3 className="font-semibold text-lg">Riwayat Pendaftaran</h3>
                                 <div className="space-y-3">
-                                    {registrationList.map((reg) => (
-                                        <div key={reg.id} className="p-4 rounded-lg border bg-white shadow-sm flex justify-between items-center">
+                                    {registrationList && registrationList.filter(reg => reg !== null).map((reg) => (
+                                        <div key={reg.id || Math.random()} className="p-4 rounded-lg border bg-white shadow-sm flex justify-between items-center">
                                             <div>
                                                 <div className="flex items-center gap-2">
                                                     <div className="font-bold text-lg">{reg.tipe === 'PKL1' ? 'PKL 1' : reg.tipe === 'PKL2' ? 'PKL 2' : reg.tipe === 'MBKM1' ? 'MBKM 1' : reg.tipe === 'MBKM2' ? 'MBKM 2' : reg.tipe}</div>
@@ -151,7 +152,7 @@ export default function PendaftaranPage() {
                                                             reg.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
                                                                 'bg-yellow-100 text-yellow-700'
                                                     }`}>
-                                                    {reg.status}
+                                                    {reg.status || 'PENDING'}
                                                 </div>
                                             </div>
                                         </div>
@@ -211,7 +212,7 @@ export default function PendaftaranPage() {
                                         required
                                     >
                                         <option value="">Pilih Instansi...</option>
-                                        {instansiList.map(item => (
+                                        {instansiList && instansiList.filter(item => item !== null).map(item => (
                                             <option key={item.id} value={item.id}>{item.nama}</option>
                                         ))}
                                     </select>

@@ -120,8 +120,11 @@ export default function AdminLaporanPage() {
 
                     const statData = {
                         harianCount: resHarian.data.length,
+                        harianReply: resHarian.data.filter(h => h.feedback).length,
                         mingguanCount: resMingguan.data.length,
+                        mingguanReply: resMingguan.data.filter(m => m.feedback).length,
                         laporanTengah: resTengah.data,
+                        tengahReply: resTengah.data?.feedback ? 1 : 0,
                         laporanAkhir: resAkhir.data
                     };
 
@@ -192,9 +195,12 @@ export default function AdminLaporanPage() {
                 NIM: item.mahasiswa?.nim,
                 Instansi: item.instansi?.nama,
                 Tipe: item.tipe,
-                Harian: item.stats?.harianCount || 0,
-                Mingguan: item.stats?.mingguanCount || 0,
-                Laporan_Tengah: item.stats?.laporanTengah ? 'Ada' : 'Belum',
+                Harian_Isi: item.stats?.harianCount || 0,
+                Harian_Reply: item.stats?.harianReply || 0,
+                Mingguan_Isi: item.stats?.mingguanCount || 0,
+                Mingguan_Reply: item.stats?.mingguanReply || 0,
+                Tengah_Isi: item.stats?.laporanTengah ? 1 : 0,
+                Tengah_Reply: item.stats?.tengahReply || 0,
                 Laporan_Akhir: akhir?.fileUrl ? 'Ada' : 'Belum',
                 Bukti_IKU: akhir?.ikuUrl ? 'Ada' : 'Belum',
                 Laporan_Final: akhir?.finalUrl ? 'Ada' : 'Belum'
@@ -204,7 +210,7 @@ export default function AdminLaporanPage() {
     };
 
     const handleExportPDF = () => {
-        const columns = ['No', 'Mahasiswa', 'NIM', 'Instansi', 'Tipe', 'Harian', 'Mingguan', 'Kemajuan', 'Akhir', 'Final'];
+        const columns = ['No', 'Mahasiswa', 'NIM', 'Instansi', 'Tipe', 'Harian (I|R)', 'Mingguan (I|R)', 'Tengah (I|R)', 'Akhir', 'Final'];
         const data = currentStudents.map((item, index) => {
             const akhir = getLatestLaporan(item.stats?.laporanAkhir);
             return [
@@ -213,9 +219,9 @@ export default function AdminLaporanPage() {
                 item.mahasiswa?.nim,
                 item.instansi?.nama,
                 item.tipe,
-                item.stats?.harianCount || 0,
-                item.stats?.mingguanCount || 0,
-                item.stats?.laporanTengah ? 'Ada' : 'Belum',
+                `${item.stats?.harianCount || 0} | ${item.stats?.harianReply || 0}`,
+                `${item.stats?.mingguanCount || 0} | ${item.stats?.mingguanReply || 0}`,
+                `${item.stats?.laporanTengah ? 1 : 0} | ${item.stats?.tengahReply || 0}`,
                 akhir?.fileUrl ? 'Ada' : 'Belum',
                 akhir?.finalUrl ? 'Ada' : 'Belum'
             ];
@@ -331,21 +337,32 @@ export default function AdminLaporanPage() {
                                         </TableCell>
                                         <TableCell className="text-center">
                                             {item.stats ? (
-                                                <span className="font-medium">{item.stats.harianCount}</span>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <div className="text-xs text-gray-400">Isi: {item.stats.harianCount}</div>
+                                                    <div className="text-xs font-bold text-green-600">Reply: {item.stats.harianReply}</div>
+                                                </div>
                                             ) : <span className="text-gray-300">...</span>}
                                         </TableCell>
                                         <TableCell className="text-center">
                                             {item.stats ? (
-                                                <span className="font-medium">{item.stats.mingguanCount}</span>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <div className="text-xs text-gray-400">Isi: {item.stats.mingguanCount}</div>
+                                                    <div className="text-xs font-bold text-purple-600">Reply: {item.stats.mingguanReply}</div>
+                                                </div>
                                             ) : <span className="text-gray-300">...</span>}
                                         </TableCell>
                                         <TableCell className="text-center">
                                             {item.stats ? (
-                                                item.stats.laporanTengah ? (
-                                                    <a href={item.stats.laporanTengah.fileUrl} target="_blank" rel="noreferrer" className="inline-flex items-center text-green-600 hover:underline text-xs gap-1">
-                                                        <CheckCircle className="h-3 w-3" /> Ada
-                                                    </a>
-                                                ) : <span className="text-gray-400 text-xs">-</span>
+                                                <div className="flex flex-col gap-0.5 items-center">
+                                                    {item.stats.laporanTengah ? (
+                                                        <>
+                                                            <a href={item.stats.laporanTengah.fileUrl} target="_blank" rel="noreferrer" className="inline-flex items-center text-blue-600 hover:underline text-[10px] gap-1">
+                                                                <CheckCircle className="h-2.5 w-2.5" /> Ada
+                                                            </a>
+                                                            <div className="text-[10px] font-bold text-orange-600">Reply: {item.stats.tengahReply}</div>
+                                                        </>
+                                                    ) : <span className="text-gray-400 text-[10px]">-</span>}
+                                                </div>
                                             ) : <span className="text-gray-300">...</span>}
                                         </TableCell>
                                         <TableCell className="text-center">

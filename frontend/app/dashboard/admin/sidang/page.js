@@ -55,14 +55,14 @@ export default function AdminSidangPage() {
                 api.get('/api/periode') // [NEW]
             ]);
 
-            const eligible = resPkl.data.filter(p => p.status === 'ACTIVE' || p.status === 'APPROVED');
+            const eligible = (Array.isArray(resPkl.data) ? resPkl.data : []).filter(p => p && (p.status === 'ACTIVE' || p.status === 'APPROVED'));
             setPendaftarans(eligible);
 
-            const dosenList = resDosens.data.filter(u => u.role === 'DOSEN');
+            const dosenList = (Array.isArray(resDosens.data) ? resDosens.data : []).filter(u => u && u.role === 'DOSEN');
             setDosens(dosenList);
 
-            setSidangs(resSidang.data);
-            setPeriodes(resPeriode.data);
+            setSidangs(Array.isArray(resSidang.data) ? resSidang.data.filter(s => s) : []);
+            setPeriodes(Array.isArray(resPeriode.data) ? resPeriode.data.filter(p => p) : []);
 
             // [NEW] Set default active period
             const active = resPeriode.data.find(p => p.isActive);
@@ -122,16 +122,16 @@ export default function AdminSidangPage() {
     const getSidangInfo = (id) => sidangs.find(s => s.pendaftaranId === id);
 
     // Filter students who don't have sidang yet for the dropdown
-    const availableStudents = pendaftarans
-        .filter(p => !sidangs.find(s => s.pendaftaranId === p.id))
+    const availableStudents = (pendaftarans || [])
+        .filter(p => p && !sidangs.find(s => s && s.pendaftaranId === p.id))
         .map(s => ({
             value: String(s.id),
-            label: `${s.mahasiswa?.nama} (${s.tipe})`
+            label: `${s.mahasiswa?.nama || 'Unknown'} (${s.tipe || '-'})`
         }));
 
-    const dosenOptions = dosens.map(d => ({
-        value: String(d.dosen?.id || 0),
-        label: d.dosen?.nama || d.username
+    const dosenOptions = (dosens || []).filter(d => d).map(d => ({
+        value: String(d.dosen?.id || d.id || 0),
+        label: d.dosen?.nama || d.username || 'Unknown Dosen'
     }));
 
     const ruangOptions = [
@@ -377,7 +377,7 @@ export default function AdminSidangPage() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="ALL">Semua Periode</SelectItem>
-                            {periodes.map(p => (
+                            {periodes && periodes.filter(p => p).map(p => (
                                 <SelectItem key={p.id} value={String(p.id)}>
                                     {p.nama} {p.isActive ? '(Aktif)' : ''}
                                 </SelectItem>
@@ -446,10 +446,10 @@ export default function AdminSidangPage() {
                         {pendaftarans.length === 0 && (
                             <tr><td colSpan="5" className="p-8 text-center text-gray-400">Belum ada mahasiswa eligible.</td></tr>
                         )}
-                        {paginatedPendaftarans.map(reg => {
+                        {paginatedPendaftarans && paginatedPendaftarans.filter(reg => reg).map(reg => {
                             const sidang = getSidangInfo(reg.id);
                             return (
-                                <tr key={reg.id} className="hover:bg-gray-50/50 transition-colors">
+                                <tr key={reg.id || Math.random()} className="hover:bg-gray-50/50 transition-colors">
                                     <td className="p-4">
                                         <div className="font-bold text-gray-900">{reg.mahasiswa?.nama}</div>
                                         <div className="text-gray-500 text-xs">{reg.mahasiswa?.nim}</div>

@@ -121,6 +121,7 @@ export const sidebarLinks = [
     { href: '/dashboard/admin/validasi', label: 'Pendaftaran Magang', icon: FileText, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI'], category: 'KEGIATAN' },
     { href: '/dashboard/admin/jadwal', label: 'Jadwal Kegiatan', icon: Calendar, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI'], category: 'KEGIATAN' },
     { href: '/dashboard/admin/sidang', label: 'Jadwal Sidang', icon: Calendar, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI'], category: 'KEGIATAN' },
+    { href: '/dashboard/admin/sppd', label: 'Rekap SPPD', icon: FileText, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI'], category: 'KEGIATAN' },
     { href: '/dashboard/admin/rekap', label: 'Rekap Nilai', icon: BookOpen, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI'], category: 'KEGIATAN' },
     { href: '/dashboard/admin/laporan', label: 'Rekap Laporan', icon: BookOpen, roles: ['ADMIN', 'SUPERADMIN', 'ADMINPRODI'], category: 'KEGIATAN' },
 ];

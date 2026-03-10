@@ -67,6 +67,7 @@ export default function BimbinganPage() {
     const [logbookFeedback, setLogbookFeedback] = useState({}); // [NEW]
     const [mingguanFeedback, setMingguanFeedback] = useState({}); // [NEW]
     const [mingguanSignedFileUrl, setMingguanSignedFileUrl] = useState({}); // [NEW]
+    const [tengahFeedback, setTengahFeedback] = useState(''); // [NEW]
 
     const [showLogbook, setShowLogbook] = useState(null);
     const [logbooks, setLogbooks] = useState([]);
@@ -140,6 +141,7 @@ export default function BimbinganPage() {
             const res = await api.get(`/api/laporan/tengah?pendaftaranId=${pendaftaranId}`);
             if (res.data) {
                 setLaporanTengah(res.data);
+                setTengahFeedback(res.data.feedback || '');
                 setShowTengah(true);
             } else {
                 alert('Mahasiswa belum upload laporan tengah.');
@@ -147,6 +149,24 @@ export default function BimbinganPage() {
         } catch (err) {
             console.error(err);
             alert('Mahasiswa belum upload laporan tengah.');
+        }
+    };
+
+    const approveTengah = async (id, status = 'APPROVED') => {
+        try {
+            const res = await api.put(`/api/laporan/tengah/${id}/approve`, { status, feedback: tengahFeedback });
+            setLaporanTengah(res.data);
+            alert('Status laporan tengah diperbarui');
+            // Refresh students list to update stats if necessary
+            const updatedStudents = students.map(s => {
+                if (laporanTengah && s.id === laporanTengah.pendaftaranId) {
+                    return { ...s, stats: { ...s.stats, hasLaporanTengah: status === 'APPROVED' } };
+                }
+                return s;
+            });
+            setStudents(updatedStudents);
+        } catch (err) {
+            alert('Gagal update status laporan tengah');
         }
     };
 
@@ -470,9 +490,40 @@ export default function BimbinganPage() {
                             <CardContent className="space-y-4">
                                 <div>
                                     <label className="text-sm font-bold block mb-1">File/Link:</label>
-                                    <a href={laporanTengah.fileUrl} target="_blank" rel="noreferrer" className="text-blue-600 underline text-sm break-all">
+                                    <a href={laporanTengah.fileUrl} target="_blank" rel="noreferrer" className="text-blue-600 underline text-sm break-all font-medium">
                                         {laporanTengah.fileUrl}
                                     </a>
+                                </div>
+                                <div className="pt-2 border-t">
+                                    <label className="text-sm font-bold block mb-2">Feedback & Status:</label>
+                                    <TinyEditor
+                                        value={tengahFeedback}
+                                        onChange={setTengahFeedback}
+                                        placeholder="Beri komentar / Catatan Revisi..."
+                                        height={180}
+                                    />
+                                    <div className="flex gap-2 mt-4">
+                                        <Button
+                                            className="flex-1"
+                                            onClick={() => approveTengah(laporanTengah.id, 'APPROVED')}
+                                            disabled={!periodes.find(p => String(p.id) === String(students.find(s => s.id === showTengah || (laporanTengah && s.id === laporanTengah.pendaftaranId))?.periodeId))?.isActive}
+                                        >
+                                            Setujui
+                                        </Button>
+                                        <Button
+                                            variant="destructive"
+                                            className="flex-1"
+                                            onClick={() => approveTengah(laporanTengah.id, 'REJECTED')}
+                                            disabled={!periodes.find(p => String(p.id) === String(students.find(s => s.id === showTengah || (laporanTengah && s.id === laporanTengah.pendaftaranId))?.periodeId))?.isActive}
+                                        >
+                                            Revisi
+                                        </Button>
+                                    </div>
+                                    {laporanTengah.status && (
+                                        <p className="mt-2 text-center text-xs">
+                                            Status Saat Ini: <span className={`font-bold ${laporanTengah.status === 'APPROVED' ? 'text-green-600' : 'text-orange-600'}`}>{laporanTengah.status}</span>
+                                        </p>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>

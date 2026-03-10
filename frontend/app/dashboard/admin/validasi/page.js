@@ -66,17 +66,19 @@ export default function AdminValidasiPage() {
                 api.get('/api/instansi'),
                 api.get('/api/periode') // [NEW] Fetch periods
             ]);
-            setRegistrations(resReg.data);
-            setPeriodes(resPeriode.data);
+            setRegistrations(Array.isArray(resReg.data) ? resReg.data.filter(r => r) : []);
+            setPeriodes(Array.isArray(resPeriode.data) ? resPeriode.data.filter(p => p) : []);
+            setInstansis(Array.isArray(resInstansi.data) ? resInstansi.data.filter(i => i) : []);
 
             // [NEW] Set default active period if not selected
-            const active = resPeriode.data.find(p => p.isActive);
+            const active = (Array.isArray(resPeriode.data) ? resPeriode.data : []).find(p => p && p.isActive);
             if (active && !selectedPeriode) {
                 setSelectedPeriode(String(active.id));
             }
 
-            // Deduplicate users to prevent key warnings
-            const uniqueUsers = Array.from(new Map(resUsers.data.map(u => [u.id, u])).values());
+            // Deduplicate users to prevent key warnings, filtering out nulls
+            const userData = Array.isArray(resUsers.data) ? resUsers.data.filter(u => u && u.id) : [];
+            const uniqueUsers = Array.from(new Map(userData.map(u => [u.id, u])).values());
 
             const dosenList = uniqueUsers.filter(u => u.role === 'DOSEN');
             setDosens(dosenList);
@@ -278,17 +280,17 @@ export default function AdminValidasiPage() {
     // Prepared Options for Combobox
 
     // Prepared Options for Combobox
-    const mahasiswaOptions = mahasiswas.map(m => ({
+    const mahasiswaOptions = (mahasiswas || []).filter(m => m).map(m => ({
         value: String(m.id),
         label: `${m.nama} (${m.nim})`
     }));
 
-    const instansiOptions = instansis.map(i => ({
+    const instansiOptions = (instansis || []).filter(i => i).map(i => ({
         value: String(i.id),
         label: i.nama
     }));
 
-    const dosenOptions = dosens.map(d => ({
+    const dosenOptions = (dosens || []).filter(d => d).map(d => ({
         value: String(d.dosen?.id || 0),
         label: d.dosen?.nama || d.username
     }));
@@ -337,7 +339,7 @@ export default function AdminValidasiPage() {
                         <SelectContent>
                             {/* [NEW] All Periods Option */}
                             <SelectItem value="ALL">Semua Periode</SelectItem>
-                            {periodes.map(p => (
+                            {periodes && periodes.filter(p => p).map(p => (
                                 <SelectItem key={p.id} value={String(p.id)}>
                                     {p.nama} {p.isActive ? '(Aktif)' : ''}
                                 </SelectItem>
@@ -407,8 +409,8 @@ export default function AdminValidasiPage() {
                                 </td>
                             </tr>
                         )}
-                        {displayedRegs.map(reg => (
-                            <tr key={reg.id} className="hover:bg-gray-50/50 transition-colors">
+                        {displayedRegs && displayedRegs.filter(reg => reg).map(reg => (
+                            <tr key={reg.id || Math.random()} className="hover:bg-gray-50/50 transition-colors">
                                 <td className="p-4">
                                     <div className="font-bold text-gray-900">{reg.mahasiswa?.nama}</div>
                                     <div className="text-gray-500 text-xs">{reg.mahasiswa?.nim}</div>

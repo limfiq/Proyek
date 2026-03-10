@@ -51,10 +51,10 @@ export default function LaporanPage() {
     const loadPendaftaran = async () => {
         try {
             const res = await api.get('/api/pkl/me');
-            if (res.data.length > 0) {
-                // [NEW] Filter for Active Period
-                // If API returns array, find the one where periode.isActive is true
-                const active = res.data.find(p => p.periode && p.periode.isActive);
+            if (res.data && res.data.length > 0) {
+                // [NEW] Filter for Active Period, ensuring data is an array and elements are not null
+                const registeredList = (Array.isArray(res.data) ? res.data : [res.data]).filter(p => p);
+                const active = registeredList.find(p => p.periode && p.periode.isActive);
 
                 // If found, set it. If not, maybe show "No active period" state?
                 // For now, let's set it if found.
@@ -76,7 +76,7 @@ export default function LaporanPage() {
     const loadHarian = async (id) => {
         try {
             const res = await api.get(`/api/laporan/harian?pendaftaranId=${id}`);
-            const data = res.data;
+            const data = (Array.isArray(res.data) ? res.data : [res.data]).filter(item => item);
             setHarianList(data);
 
             // [NEW] Default expand latest week
@@ -102,7 +102,7 @@ export default function LaporanPage() {
     const loadMingguan = async (id) => {
         try {
             const res = await api.get(`/api/laporan/mingguan?pendaftaranId=${id}`);
-            setMingguanList(res.data);
+            setMingguanList((Array.isArray(res.data) ? res.data : [res.data]).filter(m => m));
         } catch (err) {
             console.error(err);
         }
@@ -577,8 +577,8 @@ export default function LaporanPage() {
 
                                     {expandedWeeks[group.week] && (
                                         <div className="space-y-3 pt-1">
-                                            {group.items.map((item) => (
-                                                <Card key={item.id} className="bg-white hover:shadow-md transition-shadow border-l-4 border-l-primary/20">
+                                            {group.items && group.items.filter(item => item).map((item) => (
+                                                <Card key={item.id || Math.random()} className="bg-white hover:shadow-md transition-shadow border-l-4 border-l-primary/20">
                                                     <CardContent className="p-4">
                                                         <div className="flex justify-between items-start">
                                                             <div className="flex-1">
@@ -702,8 +702,8 @@ export default function LaporanPage() {
                                                     <td colSpan="3" className="p-4 text-center text-gray-500">Belum ada laporan.</td>
                                                 </tr>
                                             )}
-                                            {mingguanPaginated.map((item) => (
-                                                <tr key={item.id} className="border-t">
+                                            {mingguanPaginated && mingguanPaginated.filter(item => item).map((item) => (
+                                                <tr key={item.id || Math.random()} className="border-t">
                                                     <td className="p-3 font-bold text-center">{item.mingguKe}</td>
                                                     <td className="p-3">
                                                         <a href={item.fileUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline block">

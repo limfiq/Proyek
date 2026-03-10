@@ -159,6 +159,23 @@ exports.submitTengah = async (req, res) => {
     }
 };
 
+exports.approveTengah = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, feedback } = req.body;
+        const laporan = await LaporanTengah.findByPk(id);
+        if (!laporan) return res.status(404).send({ message: 'Logbook not found' });
+
+        laporan.status = status || 'APPROVED';
+        if (feedback) laporan.feedback = feedback;
+
+        await laporan.save();
+        res.send(laporan);
+    } catch (err) {
+        res.status(500).send({ message: err.message });
+    }
+};
+
 // Akhir
 exports.submitAkhir = async (req, res) => {
     try {

@@ -14,6 +14,12 @@ exports.register = async (req, res) => {
         if (!user || user.role !== 'MAHASISWA') {
             return res.status(403).json({ message: 'Only Mahasiswa can register' });
         }
+
+        // Fix: Check if mahasiswa profile exists
+        if (!user || !user.mahasiswa) {
+            return res.status(400).json({ message: 'Profil Mahasiswa tidak ditemukan. Silakan hubungi admin untuk melengkapi data.' });
+        }
+
         const mahasiswaId = user.mahasiswa.id;
 
         // Check Active Period
@@ -336,19 +342,19 @@ exports.getUjian = async (req, res) => {
         // Map to flat structure for frontend compatibility
         const data = sidang.map(s => {
             const hasGrade = grades.some(g => {
-                if (g.pendaftaranId !== s.pendaftaran.id) return false;
+                if (!s.pendaftaran || g.pendaftaranId !== s.pendaftaran.id) return false;
                 if (g.jenis === 'PENGUJI') return true;
                 if (g.kriteria && g.kriteria.role === 'PENGUJI') return true;
                 return false;
             });
 
             return {
-                id: s.pendaftaran.id,
-                mahasiswa: s.pendaftaran.mahasiswa,
-                instansi: s.pendaftaran.instansi,
-                periodeId: s.pendaftaran.periodeId, // [NEW] Needed for filtering
-                judulProject: s.pendaftaran.judulProject,
-                tipe: s.pendaftaran.tipe,
+                id: s.pendaftaran?.id,
+                mahasiswa: s.pendaftaran?.mahasiswa,
+                instansi: s.pendaftaran?.instansi,
+                periodeId: s.pendaftaran?.periodeId, // [NEW] Needed for filtering
+                judulProject: s.pendaftaran?.judulProject,
+                tipe: s.pendaftaran?.tipe,
                 tanggalSidang: s.tanggal,
                 alreadyGraded: hasGrade
             };

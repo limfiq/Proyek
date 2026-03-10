@@ -100,3 +100,42 @@ exports.getBimbinganLocations = async (req, res) => {
         res.status(500).json({ message: 'Error fetching bimbingan locations', error: err.message });
     }
 };
+
+exports.getAllSppd = async (req, res) => {
+    try {
+        const { periodeId, dosenId } = req.query;
+        let where = {};
+        let pendaftaranWhere = {};
+
+        if (dosenId) where.dosenId = dosenId;
+        if (periodeId) pendaftaranWhere.periodeId = periodeId;
+
+        const list = await Sppd.findAll({
+            where,
+            include: [
+                {
+                    model: db.Dosen,
+                    as: 'dosen',
+                    include: [{ model: db.User, as: 'user' }]
+                },
+                {
+                    model: Pendaftaran,
+                    as: 'pendaftaran',
+                    where: Object.keys(pendaftaranWhere).length > 0 ? pendaftaranWhere : null,
+                    required: Object.keys(pendaftaranWhere).length > 0,
+                    include: [
+                        { model: db.Mahasiswa, as: 'mahasiswa' },
+                        { model: db.Instansi, as: 'instansi' },
+                        { model: db.Periode, as: 'periode' }
+                    ]
+                }
+            ],
+            order: [['tanggal', 'DESC']]
+        });
+
+        res.json(list);
+    } catch (err) {
+        console.error('getAllSppd Error:', err);
+        res.status(500).json({ message: 'Error fetching all SPPD', error: err.message });
+    }
+};

@@ -41,7 +41,7 @@ export default function SidangPage() {
             }
 
             const res = await api.get('/api/pkl/ujian');
-            const studentData = res.data;
+            const studentData = (Array.isArray(res.data) ? res.data : [res.data]).filter(s => s !== null && s !== undefined);
 
             // Fetch report and schedule for each student
             const studentsWithReports = await Promise.all(studentData.map(async (student) => {
@@ -133,12 +133,12 @@ export default function SidangPage() {
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredStudents.map(mhs => {
-                    const isActivePeriod = periodes.find(p => String(p.id) === String(mhs.periodeId))?.isActive;
+                {filteredStudents && filteredStudents.filter(mhs => mhs).map(mhs => {
+                    const isActivePeriod = periodes.find(p => p && String(p.id) === String(mhs.periodeId))?.isActive;
                     return (
-                        <Card key={mhs.id} className="hover:shadow-md transition-shadow">
+                        <Card key={mhs.id || Math.random()} className="hover:shadow-md transition-shadow">
                             <CardHeader className="pb-2">
-                                <CardTitle className="text-lg">{mhs.mahasiswa.nama}</CardTitle>
+                                <CardTitle className="text-lg">{mhs.mahasiswa?.nama || 'Unknown'}</CardTitle>
                                 <p className="text-sm text-gray-500">{mhs.mahasiswa.nim}</p>
                             </CardHeader>
                             <CardContent>
